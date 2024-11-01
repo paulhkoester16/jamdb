@@ -1,5 +1,7 @@
-import pandas as pd
 import hashlib
+
+import pandas as pd
+
 
 def _id_from_name(name):
     return name.lower().strip().replace(" ", "_")
@@ -35,7 +37,7 @@ class Entity(metaclass=_EntityFactory):
             return True
         if row[key] is None:
             return True
-        if row[key] in {'NULL', '"NULL"', "'NULL'"}:
+        if row[key] in {"NULL", '"NULL"', "'NULL'"}:
             return True
         return False
 
@@ -53,17 +55,11 @@ class Entity(metaclass=_EntityFactory):
     def impute_row(self, row):
         if isinstance(row, pd.Series):
             row = row.to_dict()
-        row = {
-            k: row.get(k, None) for k in self.columns
-        }
-        row = {
-            k: v for k, v in row.items() if not self._is_missing(row, k)
-        }
+        row = {k: row.get(k, None) for k in self.columns}
+        row = {k: v for k, v in row.items() if not self._is_missing(row, k)}
         # row = self._impute_id(row)
         row = self._more_impute(row)
         return row
-
-
 
 
 # ========= TODO -- delete me =======================================================
@@ -71,6 +67,7 @@ class Entity(metaclass=_EntityFactory):
 # But we created human-readable ids when we were manually managing LibreOffice files
 # Once the DB is only managed and acccessed via front end, there won't be need
 # for human readable ids... I don't think.
+
 
 class Composer(Entity):
     def _impute_id(self, row):
@@ -166,7 +163,9 @@ class SongPerform(Entity):
 class SubGenre(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
-            row[self.primary_key] = f'{_id_from_name(row["subgenre"])}:{row["genre_id"]}'
+            row[self.primary_key] = (
+                f'{_id_from_name(row["subgenre"])}:{row["genre_id"]}'
+            )
         return row
 
 
@@ -176,7 +175,9 @@ class Venue(Entity):
             row[self.primary_key] = _id_from_name(row["venue"])
         return row
 
+
 # ===================================================================================
+
 
 def entity_factory(columns, primary_key, entity_class_name="Entity") -> Entity:
     """
@@ -188,9 +189,10 @@ def entity_factory(columns, primary_key, entity_class_name="Entity") -> Entity:
 
     """
     entity_cls = _EntityFactory.factory(entity_class_name)
-    entity = entity_cls(table_name=entity_class_name, columns=columns, primary_key=primary_key)
+    entity = entity_cls(
+        table_name=entity_class_name, columns=columns, primary_key=primary_key
+    )
     return entity
-
 
 
 class FieldInsertError(Exception):
@@ -200,8 +202,17 @@ class FieldInsertError(Exception):
 class Field:
 
     # Unique will be difficult to enforce here, as UNIQUE constraint may apply to multiple fields
-    def __init__(self, table_name, field_name, required=False, unique=False, allowed_values=None, default=None, current_values=None):
-        self.table_name = table_name        
+    def __init__(
+        self,
+        table_name,
+        field_name,
+        required=False,
+        unique=False,
+        allowed_values=None,
+        default=None,
+        current_values=None,
+    ):
+        self.table_name = table_name
         self.field_name = field_name
         self.required = required
         self.default = default
@@ -215,7 +226,7 @@ class Field:
     @property
     def name(self):
         return f"{self.table_name}.{self.field_name}"
-    
+
     def validate_insert(self, value=None):
         if value is None:
             value = self.default
@@ -234,9 +245,3 @@ class Field:
                 msg = f"{value=} is not an allowed value for {self.name}."
                 raise FieldInsertError(msg)
         return value
-        
-        
-
-
-
-

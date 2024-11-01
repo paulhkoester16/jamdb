@@ -1,11 +1,27 @@
+# TODO --
+#   For all the `insert_row`, `delete_row` etc methods
+#   1. Move those to `_insert_row`, `_delete_row`
+#   2. Methods that make recurisve calls now call the `_insert_row`
+#   3. Create public `insert_row` mthods that first `self.close()`, `self._connect()`
+#      then `_insert_row`
+
 import json
 import sqlite3
-import pandas as pd
 from pathlib import Path
+
 import graphviz
+import pandas as pd
+
 from .entities import entity_factory
 
 # set a global or evn variable for db_file = "jamming.db"
+
+def db_factory(db_file):
+    # db_file = "data/jamming.db"
+    db_file = Path(db_file)
+    db_handler = BackendSQLite(db_file)
+    return db_handler
+
 
 class DBError(sqlite3.IntegrityError):
     pass
@@ -27,7 +43,7 @@ class UniqueConstraintError(DBError):
     pass
 
 
-def _parse_sql_file(sql_file):    
+def _parse_sql_file(sql_file):
     def drop_comment(row):
         if row.startswith("/"):
             return row.split("/", 2)[-1]
@@ -35,12 +51,14 @@ def _parse_sql_file(sql_file):
 
     sql_file = Path(sql_file)
     commands = [drop_comment(x.strip()) for x in sql_file.read_text().split(";")]
-    commands = [x  + ";" for x in commands if x != ""]
+    commands = [x + ";" for x in commands if x != ""]
     return commands
 
 
-def init_db(sql_file, db_file):
+def init_db(sql_file, db_file, force_rebuild=False):
 
+    if force_rebuild:
+        db_file.unlink(missing_ok=True)
     conn = BackendSQLite(db_file)
 
     commands = _parse_sql_file(sql_file)
@@ -60,7 +78,7 @@ class Backend:
 
 class BackendSQLite(Backend):
     _enforce_fks = True
-    
+
     def __init__(self, db_file):
         self.db_file = Path(db_file)
 
@@ -73,7 +91,7 @@ class BackendSQLite(Backend):
         self.__db_file = Path(value)
         self._connect()
         self._set_entities()
-    
+
     @property
     def entities(self):
         return self.__entities
@@ -93,13 +111,16 @@ class BackendSQLite(Backend):
             for table in table_metadata:
                 table_name = table["entity_class_name"]
                 pks = list(
-                    self.query(f'SELECT name, pk FROM pragma_table_info("{table_name}") WHERE pk > 0;')
-                    .sort_values("pk")["name"]
+                    self.query(
+                        f'SELECT name, pk FROM pragma_table_info("{table_name}") WHERE pk > 0;'
+                    ).sort_values("pk")["name"]
                 )
                 if len(pks) != 1:
-                    raise DBError(f"Trying to pass composite key {pks=} to {table_name=}")
+                    raise DBError(
+                        f"Trying to pass composite key {pks=} to {table_name=}"
+                    )
                 table["primary_key"] = pks[0]
-            
+
             self.__entities = {
                 metadata["entity_class_name"]: entity_factory(**metadata)
                 for metadata in table_metadata
@@ -108,13 +129,13 @@ class BackendSQLite(Backend):
             # This should only be necessary when `init_db` is called, as then the
             # backend is initiated BEFORE it gets populated
             self.__entities = {}
-    
+
     @property
     def is_authenticated(self):
         # temp set to True
         # But use to require auth to perform certain writes
         return True
-    
+
     @property
     def conn(self):
         return self.__conn
@@ -132,18 +153,26 @@ class BackendSQLite(Backend):
             conn.commit()
 
         self.__conn = conn
-    
+
     def close(self):
         self.conn.close()
 
+    def reset_conn(self):
+        self.close()
+        self._connect()
+
     def execute(self, command):
+        self.reset_conn()
+        return self._execute(command)
+    
+    def _execute(self, command):
         try:
             return self.cursor().execute(command)
         except sqlite3.IntegrityError as exc:
             msg = f"error executing command: \n{command}"
             msg += "\n" + "\n".join(exc.args)
             error_class = DBError
-            
+
             if any("UNIQUE" in msg for msg in exc.args):
                 # the sqllite error on UNIQUE is descriptive enough that we can
                 # probably fully parse error message here.
@@ -161,7 +190,11 @@ class BackendSQLite(Backend):
             raise error_class(msg) from exc
 
     def execute_and_commit(self, command, commit=True):
-        result = self.execute(command)
+        self.reset_conn()
+        return self._execute_and_commit(command, commit)
+    
+    def _execute_and_commit(self, command, commit=True):
+        result = self._execute(command)
         if commit and self.is_authenticated:
             self.conn.commit()
         return result
@@ -171,7 +204,7 @@ class BackendSQLite(Backend):
 
     def table_names(self):
         return list(self.query("SELECT table_name from _schema_tables")["table_name"])
-    
+
     def _get_relations(self):
         relations = []
         for table_name in self.table_names():
@@ -180,26 +213,30 @@ class BackendSQLite(Backend):
                     "left_table": table_name,
                     "left_key": row["from"],
                     "right_table": row["table"],
-                    "right_key": row["to"]
+                    "right_key": row["to"],
                 }
-                for _, row in self.query(f"pragma foreign_key_list('{table_name}')").iterrows()
+                for _, row in self.query(
+                    f"pragma foreign_key_list('{table_name}')"
+                ).iterrows()
             )
 
         for constraint in relations:
             right_table = constraint["right_table"]
             right_key = constraint["right_key"]
             constraint["allowed_values"] = list(
-                self.query(f'SELECT {right_key} FROM {right_table}')[right_key]
+                self.query(f"SELECT {right_key} FROM {right_table}")[right_key]
             )
-        
+
         return pd.DataFrame(relations)
-        
+
     def _sorted_tables(self):
         # tables are sorted according to FK relations
         #   If table A has FK into table B, then table B appears first here
         sorted_tables = self.table_names()
         edges = set(
-            self._get_relations().apply(lambda row: (row["left_table"], row["right_table"]), axis=1)
+            self._get_relations().apply(
+                lambda row: (row["left_table"], row["right_table"]), axis=1
+            )
         )
         changed = True
         while changed:
@@ -210,7 +247,7 @@ class BackendSQLite(Backend):
                 if left_idx < right_idx:
                     changed = True
                     sorted_tables[left_idx] = right_table
-                    sorted_tables[right_idx] = left_table 
+                    sorted_tables[right_idx] = left_table
         return sorted_tables
 
     def _create_erd(self):
@@ -237,7 +274,7 @@ class BackendSQLite(Backend):
 
     def _insert_or_update(self, table_name, row, command, commit):
         try:
-            self.execute_and_commit(command, commit=commit)
+            self._execute_and_commit(command, commit=commit)
         except UniqueConstraintError as exc:
             unique_constraints = [
                 error.strip()
@@ -257,8 +294,10 @@ class BackendSQLite(Backend):
             msg = "failed constraints: \n" + "\n".join(not_null_constraints)
             raise NotNullConstraintError(msg) from exc
         except FKConstraintError as exc:
-            failed_constraints = self._get_failed_fk_constraints_insert(table_name, row)        
-            msg = "failed constraints: \n" + "\n".join([json.dumps(x) for x in failed_constraints])
+            failed_constraints = self._get_failed_fk_constraints_insert(table_name, row)
+            msg = "failed constraints: \n" + "\n".join(
+                [json.dumps(x) for x in failed_constraints]
+            )
             raise FKConstraintError(msg) from exc
 
     def _create_where_clause(self, key_name, key_value):
@@ -266,8 +305,12 @@ class BackendSQLite(Backend):
             key_value = f'"{key_value}"'
         where_clause = f"WHERE {key_name} = {key_value}"
         return where_clause
-    
+
     def get_row(self, table_name, primary_key):
+        self.reset_conn()
+        return self._get_row(table_name, primary_key)
+    
+    def _get_row(self, table_name, primary_key):
         try:
             key_name = self.entities[table_name].primary_key
         except KeyError as exc:
@@ -276,7 +319,9 @@ class BackendSQLite(Backend):
 
         where_clause = self._create_where_clause(key_name, primary_key)
 
-        retrieved = self.query(f"SELECT * FROM {table_name} {where_clause}").to_dict(orient="records")
+        retrieved = self.query(f"SELECT * FROM {table_name} {where_clause}").to_dict(
+            orient="records"
+        )
         if len(retrieved) == 0:
             msg = f"Empty retrieval for {primary_key=} from {table_name=}"
             raise DBError(msg)
@@ -285,12 +330,16 @@ class BackendSQLite(Backend):
                 f"Retrieved multiple for {primary_key=} from {table_name=}."
                 "This SHOULD be impossible, given the primary key constraints."
             )
-            raise DBError(msg)            
+            raise DBError(msg)
         return retrieved[0]
-    
+
     def insert_row(self, table_name, row, commit=True):
+        self.reset_conn()
+        return self._insert_row(table_name, row, commit)
+    
+    def _insert_row(self, table_name, row, commit=True):
         row = self.entities[table_name].impute_row(row)
-        
+
         cols = ",".join(list(row.keys()))
         vals = ",".join([f'"{str(x)}"' for x in row.values()])
         command = f"INSERT INTO {table_name} ({cols})\nVALUES ({vals});"
@@ -298,31 +347,45 @@ class BackendSQLite(Backend):
         self._insert_or_update(table_name, row, command, commit)
 
     def delete_row(self, table_name, primary_key, commit=True):
+        self.reset_conn()
+        return self._delete_row(table_name, primary_key, commit)
+
+    def _delete_row(self, table_name, primary_key, commit=True):
         try:
-            retrieved_row = self.get_row(table_name, primary_key)
+            retrieved_row = self._get_row(table_name, primary_key)
         except DBError as exc:
             msg = "Trying to delete non-existent object."
             raise RetrieveRowError(msg) from exc
 
         key_name = self.entities[table_name].primary_key
-        where_clause = self._create_where_clause(key_name=key_name, key_value=primary_key)
+        where_clause = self._create_where_clause(
+            key_name=key_name, key_value=primary_key
+        )
         command = f"DELETE FROM {table_name} {where_clause};"
 
         try:
-            self.execute_and_commit(command, commit=commit)
+            self._execute_and_commit(command, commit=commit)
         except FKConstraintError as exc:
-            failed_constraints = self._get_failed_fk_constraints_delete(table_name, primary_key, key_name)
-            msg = "failed constraints: \n" + "\n".join([json.dumps(x) for x in failed_constraints])
+            failed_constraints = self._get_failed_fk_constraints_delete(
+                table_name, primary_key, key_name
+            )
+            msg = "failed constraints: \n" + "\n".join(
+                [json.dumps(x) for x in failed_constraints]
+            )
             raise FKConstraintError(msg) from exc
 
         return retrieved_row
 
     def update_row(self, table_name, primary_key, row, commit=True):
+        self.reset_conn()
+        return self._update_row(table_name, primary_key, row, commit)
+
+    def _update_row(self, table_name, primary_key, row, commit=True):
         # Update_row does NOT permit renaming a primary key
         # A seperate method will be suplied for that
 
         try:
-            existing_row = self.get_row(table_name, primary_key)
+            existing_row = self._get_row(table_name, primary_key)
         except DBError as exc:
             msg = "Trying to update non-existent object."
             raise RetrieveRowError(msg) from exc
@@ -332,11 +395,13 @@ class BackendSQLite(Backend):
             msg = f"Renaming primary key from `update_row` is not allowed."
             raise DBError(msg)
 
-        where_clause = self._create_where_clause(key_name=key_name, key_value=primary_key)        
-        set_clause = "SET " + ", ".join([
-            f'{name} = "{value}"' for name, value in row.items()
-        ])
-        
+        where_clause = self._create_where_clause(
+            key_name=key_name, key_value=primary_key
+        )
+        set_clause = "SET " + ", ".join(
+            [f'{name} = "{value}"' for name, value in row.items()]
+        )
+
         command = f"UPDATE {table_name} {set_clause} {where_clause};"
         self._insert_or_update(table_name, row, command, commit)
 
@@ -346,7 +411,7 @@ class BackendSQLite(Backend):
             deleted.append(
                 {
                     "table_name": table_name,
-                    "row": self.delete_row(table_name, primary_key, commit=False)
+                    "row": self._delete_row(table_name, primary_key, commit=False),
                 }
             )
         except RetrieveRowError as exc:
@@ -355,44 +420,48 @@ class BackendSQLite(Backend):
             pass
         except FKConstraintError as exc:
             key_name = self.entities[table_name].primary_key
-            failed_constraints = self._get_failed_fk_constraints_delete(table_name, primary_key, key_name)
+            failed_constraints = self._get_failed_fk_constraints_delete(
+                table_name, primary_key, key_name
+            )
             for constraint in failed_constraints:
                 table_primary_key = self.entities[constraint["left_table"]].primary_key
-                
+
                 to_delete = {
                     "table_name": constraint["left_table"],
-                    "primary_key": constraint["left_table_id"][table_primary_key]
+                    "primary_key": constraint["left_table_id"][table_primary_key],
                 }
                 deleted.extend(self._cascading_delete(**to_delete))
-    
+
             deleted.append(
                 {
                     "table_name": table_name,
-                    "row": self.delete_row(table_name, primary_key, commit=False)
+                    "row": self._delete_row(table_name, primary_key, commit=False),
                 }
             )
-            
+
         return deleted
-    
-    
+
     def rename_primary_key(self, table_name, old_key, new_key, commit=True):
-        self._connect()
-        
+        self.reset_conn()
+        return self._rename_primary_key(table_name, old_key, new_key, commit)
+    
+    def _rename_primary_key(self, table_name, old_key, new_key, commit=True):
+
         try:
-            existing_row = self.get_row(table_name, old_key)
+            existing_row = self._get_row(table_name, old_key)
         except DBError as exc:
             msg = "Trying to rename PK for non-existent object."
             raise RetrieveRowError(msg) from exc
-    
+
         key_name = self.entities[table_name].primary_key
         where_clause = self._create_where_clause(key_name=key_name, key_value=old_key)
         row = {key_name: new_key}
         set_clause = f'SET {key_name} = "{new_key}"'
-     
+
         command = f"UPDATE {table_name} {set_clause} {where_clause};"
         try:
             # self._insert_or_update will raise
-            #  * UNIQUE Constraint errors 
+            #  * UNIQUE Constraint errors
             #  * FK Constraint errors -- but since FK occur on "delete" rather than insert,
             #    the FK error message is empty
             self._insert_or_update(table_name, row, command, commit=False)
@@ -400,69 +469,66 @@ class BackendSQLite(Backend):
             # Now catch FK so we can populate with delete constraint errors
             stack_insert = []
             to_delete = []
-            failed_constraints = self._get_failed_fk_constraints_delete(table_name, old_key, key_name)
+            failed_constraints = self._get_failed_fk_constraints_delete(
+                table_name, old_key, key_name
+            )
             for constraint in failed_constraints:
                 table_primary_key = self.entities[constraint["left_table"]].primary_key
                 thing = {
                     "to_delete": {
                         "table_name": constraint["left_table"],
-                        "primary_key": constraint["left_table_id"][table_primary_key]
+                        "primary_key": constraint["left_table_id"][table_primary_key],
                     },
-                    "to_replace": {}
+                    "to_replace": {},
                 }
                 if constraint["right_table"] == table_name:
                     if key_name in constraint["right_fk"]:
                         left_fk_ = list(constraint["left_fk"].keys())[0]
-                        thing["to_replace"] = {
-                            left_fk_: new_key
-                        }
+                        thing["to_replace"] = {left_fk_: new_key}
                 to_delete.append(thing)
-    
+
             while len(to_delete) > 0:
                 thing = to_delete.pop()
                 deleted = self._cascading_delete(**thing["to_delete"])
 
                 for a, b in thing["to_replace"].items():
                     deleted[-1]["row"][a] = b
-        
+
                 stack_insert.extend(deleted)
-            
+
             self._insert_or_update(table_name, row, command, commit=False)
-            
+
             while len(stack_insert):
                 thing = stack_insert.pop()
-                self.insert_row(**thing, commit=False)
-    
+                self._insert_row(**thing, commit=False)
+
         if commit and self.is_authenticated:
             self.conn.commit()
-    
+
         return
 
     def _get_failed_fk_constraints_insert(self, table_name, row):
 
-        fks = (
-            self._get_relations().query(f'left_table == "{table_name}"')
-        ).to_dict(orient="records")
+        fks = (self._get_relations().query(f'left_table == "{table_name}"')).to_dict(
+            orient="records"
+        )
 
         failed_constraints = []
         for constraint in fks:
-            if constraint["left_key"] in row:    
+            if constraint["left_key"] in row:
                 value = row[constraint["left_key"]]
 
                 if value not in constraint["allowed_values"]:
                     failed_constraints.append(
-                        {
-                            "provided_value": value,
-                            "constraint": constraint
-                        }
+                        {"provided_value": value, "constraint": constraint}
                     )
         return failed_constraints
-    
+
     def _get_failed_fk_constraints_delete(self, table_name, primary_key, key_name):
-        fks = (
-            self._get_relations().query(f'right_table == "{table_name}"')
-        )[["left_table", "left_key", "right_key"]].to_dict(orient="records")
-        
+        fks = (self._get_relations().query(f'right_table == "{table_name}"'))[
+            ["left_table", "left_key", "right_key"]
+        ].to_dict(orient="records")
+
         failed_constraints = []
         for constraint in fks:
             # try:
@@ -471,34 +537,28 @@ class BackendSQLite(Backend):
             # except IndexError:
             #     # Is this what we want ???
             #     continue
-        
+
             left_table = constraint["left_table"]
             left_table_pk = self.entities[left_table].primary_key
             left_key = constraint["left_key"]
-            result = (
-                self.query(f'SELECT * FROM {left_table} WHERE {left_key} = "{primary_key}"')
-                .to_dict(orient="records")
-            )
+            result = self.query(
+                f'SELECT * FROM {left_table} WHERE {left_key} = "{primary_key}"'
+            ).to_dict(orient="records")
             for row in result:
                 message = {
                     "left_table": left_table,
-                    "left_table_id": {
-                        left_table_pk: row[left_table_pk]
-                    },
-                    "left_fk": {
-                        left_key: primary_key
-                    },
+                    "left_table_id": {left_table_pk: row[left_table_pk]},
+                    "left_fk": {left_key: primary_key},
                     "right_table": table_name,
-                    "right_fk": {
-                        constraint["right_key"]: primary_key
-                    }
+                    "right_fk": {constraint["right_key"]: primary_key},
                 }
                 failed_constraints.append(message)
 
         sorted_tables = {name: idx for idx, name in enumerate(self._sorted_tables())}
+
         def sort_by_left_table(row):
             return sorted_tables[row["left_table"]]
 
         failed_constraints = sorted(failed_constraints, key=sort_by_left_table)
-        
+
         return failed_constraints
