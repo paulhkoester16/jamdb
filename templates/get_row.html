@@ -1,0 +1,35 @@
+{% set table_name = form.table_name(**{"hx-post": request.full_path})%}
+{% set primary_key = form.primary_key(**{"hx-swap-oob":"true"}) %}
+
+{% if "HX-Request" in request.headers %}
+    {{table_name}}
+    {{primary_key}}
+{% else %}
+
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="htmx-config" content='{"defaultSwapStyle":"outerHTML"}'>
+    <title>Jamming DB: Get Row</title>
+</head>
+
+<body>
+    <form action="{{ url_for('get_row_read')}}" method="post">
+        <label for="tableNameLabel"class="form-label">Table Name</label>
+        {{table_name}}
+        <br/>
+        <label for="primaryKeyLabel"class="form-label">Primary Key</label>        
+        {{primary_key}}
+        <br/>
+        {{form.submit()}}
+    </form>
+    
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+</body>
+
+</html>
+
+{% endif %}
