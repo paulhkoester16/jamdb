@@ -13,6 +13,7 @@ import graphviz
 import pandas as pd
 
 from .entities import entity_factory
+from .globals import me_id
 
 # set a global or evn variable for db_file = "jamming.db"
 
@@ -59,17 +60,17 @@ def init_db(sql_file, db_file, force_rebuild=False):
 
     if force_rebuild:
         db_file.unlink(missing_ok=True)
-    conn = BackendSQLite(db_file)
+    db_handler = BackendSQLite(db_file)
 
     commands = _parse_sql_file(sql_file)
     for command in commands:
         try:
-            conn.execute_and_commit(command)
+            db_handler.execute_and_commit(command)
         except Exception as exc:
             msg = f"Error in \n{command}"
             raise Exception(msg) from exc
-    conn._set_entities()
-    conn.close()
+    db_handler._set_entities()
+    db_handler.close()
 
 
 class Backend:
@@ -81,6 +82,7 @@ class BackendSQLite(Backend):
 
     def __init__(self, db_file):
         self.db_file = Path(db_file)
+        self.me = me_id
 
     @property
     def db_file(self):
