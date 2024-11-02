@@ -16,6 +16,7 @@
 from collections import defaultdict
 import pandas as pd
 import copy
+import json
 
 class Resolver:
     # TODO -- How much of these should be defined as VIEWS in the DB?
@@ -289,9 +290,10 @@ class Resolver:
                 )
             )
             self.__simplified_key_df = output
-            return self.__simplified_key_df    
+            return self.__simplified_key_df
 
     def get_simplified_songs_df(self):
+
         try:
             return self.__simplified_songs_df
         except AttributeError:
@@ -309,28 +311,30 @@ class Resolver:
                         else:
                             possible_list = possible_list.split(",")
                     return [x.replace('"', "").strip() for x in possible_list]
-                except Exception:
-                    return [list_]
-
+                except Exception as exc:
+                    return list_
+    
             output = (
                 self.db_handler.query("SELECT * FROM Song")
                 .merge(
                     self.get_simplified_key_df().rename(columns={"id": "key_id"}),
+                    how="left",
                     on="key_id",
                 ).merge(
                     self.get_simplified_subgenre_df().rename(columns={"id": "subgenre_id"}),
-                    on="subgenre_id"
+                    on="subgenre_id",
+                    how="left"
                 )
-            )
+            ).fillna({col: "" for col in ["root", "mode_name", "subgenre", "genre"]})
             output["reference_recordings"] = output["reference_recordings"].apply(proc_list_of_strings)
-            output["charts"] = output["charts"].apply(proc_list_of_strings)            
-
+            output["charts"] = output["charts"].apply(proc_list_of_strings)
+    
             output = output[[
                 "id", "song", "root", "mode_name", "subgenre", "genre", "reference_recordings", "charts"
             ]]
-            
+
             self.__simplified_songs_df = output
-            return self.__simplified_songs_df    
+            return self.__simplified_songs_df
 
     def get_simplified_instruments_df(self):
         output = self.db_handler.query("SELECT id, instrument FROM Instrument")
@@ -414,8 +418,10 @@ class Resolver:
         song_id = performed_song.pop("song_id")
         event_occ = self.get_simplified_event_occ_df().set_index("id").loc[event_occ_id].to_dict()
         song = self.get_simplified_songs_df().set_index("id").loc[song_id].to_dict()
-        song["key"] = f'{song.pop("root")} {song.pop("mode_name")}'
-        song["genre"] = f'{song.pop("genre")}: {song.pop("subgenre")}'
+        song["key"] = f'{song.pop("root")} {song.pop("mode_name")}'.strip()
+        song["genre"] = f'{song.pop("genre")}: {song.pop("subgenre")}'.strip()
+        if song["genre"] == ":":
+            song["genre"] = ""
 
         player_ids = performed_song.pop("players")
         _people = (
@@ -447,17 +453,36 @@ class Resolver:
             .to_dict(orient="records")
         )
 
-        key_id = performed_song["key_id"]
-        if key_id.strip() != "":
+        key_id = (performed_song["key_id"] or "").strip()
+        if key_id != "":
             key = self.get_simplified_key_df().set_index("id").loc[key_id].to_dict()
             key = f'{key.pop("root")} {key.pop("mode_name")}'
         else:
             key = song["key"]
+
+
+        def proc_youtube_link(video):
+            if video is None or video.strip() == "":
+                return {}
+            video = video.strip()
+            embeddable = video
+            links = {
+                "link": video,
+            }
+            if "/embed/" in embeddable:
+                links["embeddable"] = embeddable
+                return links
+            embed_pref = "https://youtube.com/embed/"
+            for prefix in ["https://youtu.be/", "https://youtube.com/"]:
+                if embeddable.startswith(prefix):
+                    links["embeddable"] = embeddable.replace(prefix, embed_pref)
+                    return links
+
         return {
             "event_occ": event_occ,
             "song": song,
             "people_who_played": people_who_played,
-            "video": performed_song.get("video", ""),
+            "video": proc_youtube_link(performed_song.get("video", "")),
             "key_performed": key            
         }
 
