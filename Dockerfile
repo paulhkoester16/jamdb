@@ -34,6 +34,9 @@ RUN adduser \
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
+RUN apt update -y
+RUN apt-get install -y graphviz
+
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements/requirements.txt,target=requirements/requirements.txt \
     --mount=type=bind,source=requirements/requirements_dev.txt,target=requirements/requirements_dev.txt \
@@ -47,12 +50,12 @@ RUN --mount=type=bind,source=jamdb,target=jamdb \
 RUN --mount=type=bind,source=tests,target=tests \
     --mount=type=bind,source=data,target=data \
     pytest --cov jamdb \
-    --cov-branch \
-    --junitxml=test-report.xml \
-    --cov-report html:coverage_reports/htmlcov \
-    --cov-report xml:coverage_reports/coverage.xml \
-    --cov-report term \
-    tests
+        --cov-branch \
+        --junitxml=test-report.xml \
+        --cov-report html:coverage_reports/htmlcov \
+        --cov-report xml:coverage_reports/coverage.xml \
+        --cov-report term \
+        tests
 
 # Switch to the non-privileged user to run the application.
 USER appuser
