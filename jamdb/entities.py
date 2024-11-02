@@ -6,6 +6,16 @@ import pandas as pd
 def _id_from_name(name):
     return name.lower().strip().replace(" ", "_")
 
+def _format_id_as_str(x):
+    # Some ids are strs that look like nums, and pandas will cast them to float.
+    # This undoes that.
+    try:
+        x = float(x)
+        x = f"{x:.0f}"
+    except ValueError:
+        pass
+    return x
+
 
 class _EntityFactory(type):
     REGISTRY = {}
@@ -19,7 +29,12 @@ class _EntityFactory(type):
     @classmethod
     def factory(mcs, entity_class_name):
         """Add `entity_class_name` to registry."""
-        entity_cls = mcs.REGISTRY.get(entity_class_name, Entity)
+        if entity_class_name in mcs.REGISTRY:
+            entity_cls = mcs.REGISTRY[entity_class_name]
+        elif f"{entity_class_name}Ent" in mcs.REGISTRY:
+            entity_cls = mcs.REGISTRY[f"{entity_class_name}Ent"]
+        else:
+            entity_cls = Entity
         return entity_cls
 
 
@@ -59,6 +74,7 @@ class Entity(metaclass=_EntityFactory):
         row = {k: v for k, v in row.items() if not self._is_missing(row, k)}
         # row = self._impute_id(row)
         row = self._more_impute(row)
+        row[self.primary_key] = _format_id_as_str(row[self.primary_key])
         return row
 
 
@@ -69,42 +85,42 @@ class Entity(metaclass=_EntityFactory):
 # for human readable ids... I don't think.
 
 
-class Composer(Entity):
+class ComposerEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["composer"])
         return row
 
 
-class EventGen(Entity):
+class EventGenEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["name"])
         return row
 
 
-class EventOcc(Entity):
+class EventOccEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["name"])
         return row
 
 
-class Genre(Entity):
+class GenreEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["genre"])
         return row
 
 
-class Instrument(Entity):
+class InstrumentEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["instrument"])
         return row
 
 
-class Key(Entity):
+class KeyEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = row["root"]
@@ -113,54 +129,54 @@ class Key(Entity):
         return row
 
 
-class Mode(Entity):
+class ModeEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["mode_name"])
         return row
 
 
-class Person(Entity):
+class PersonEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["public_name"])
         return row
 
 
-class PersonInstrument(Entity):
+class PersonInstrumentEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = f'{row["person_id"]}:{row["instrument_id"]}'
         return row
 
 
-class SetList(Entity):
+class SetListEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["setlist"])
         return row
 
 
-class SetlistSongs(Entity):
+class SetlistSongsEnt(Entity):
     pass
 
 
-class Song(Entity):
+class SongEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["song"])
         return row
 
 
-class SongLearn(Entity):
+class SongLearnEnt(Entity):
     pass
 
 
-class SongPerform(Entity):
+class SongPerformEnt(Entity):
     pass
 
 
-class SubGenre(Entity):
+class SubGenreEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = (
@@ -169,7 +185,7 @@ class SubGenre(Entity):
         return row
 
 
-class Venue(Entity):
+class VenueEnt(Entity):
     def _impute_id(self, row):
         if self._is_missing(row, self.primary_key):
             row[self.primary_key] = _id_from_name(row["venue"])
