@@ -21,9 +21,11 @@
     <dd>- {{person["full_name"]}}</dd>        
     <dt>Public name</dt>
     <dd>- {{person["public_name"]}}</dd>
-    {% for contact in person["contacts"] %}
-      <dt>{{ contact[0] }}<dt>
-      <dd>- <a href="{{ contact[1] }}">{{ contact[1] }}</a><dd>
+    {% for contact_type, contact_links in person["contacts"].items() %}
+      <dt>{{ contact_type }}<dt>
+      {% for contact_link in contact_links %}
+        <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
+      {% endfor %}
     {% endfor %}
 
     </dl>

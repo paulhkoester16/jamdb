@@ -147,19 +147,12 @@ def detail_person(person_id):
     resolver = Resolver(db_handler)
     person = resolver._person_mapping().loc[person_id].to_dict()
 
-    contacts = []
-    facebook = person.pop("facebook", "")
-    if facebook != "":
-        contacts.append(["Facebook", facebook])
-    insta = person.pop("insta", "")
-    if insta != "":
-        contacts.append(["Instagram", insta])
-    youtube = person.pop("youtube", "")
-    if youtube != "":
-        contacts.append(["YouTube", youtube])
-    other_contact = person.pop("other_contact", "")
-    if other_contact != "":
-        contacts.append(["Other Contact", other_contact])
+    contacts = defaultdict(list)
+    orig_contacts = person.pop("contacts", [])
+    for contact in orig_contacts:
+        if contact.get("link", "").strip() == "":
+            continue
+        contacts[contact["contact_type"]].append(contact["link"])
     person["contacts"] = contacts
 
     return render_template("detail_person.html", person=person)

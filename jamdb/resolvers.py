@@ -238,15 +238,37 @@ class Resolver:
         return self.db_handler.query("SELECT * FROM EventOccView")
 
     def _person_mapping(self):
+        # FIXME -- don't need now that we have simplified_persons_df
         try:
             mapping = self.__person_map
         except AttributeError:
-            self.__person_map = (
-                self.db_handler.query("SELECT * FROM PERSON").set_index("id")
-            )
+            mapping = self.get_simplified_persons_df().copy()
+            mapping["id"] = mapping["person_id"]
+            mapping.set_index("id", inplace=True)
+            self.__person_map = mapping
             mapping = self.__person_map
         return mapping
-    
+
+    def get_simplified_persons_df(self):
+        try:
+            return self.__simplified_persons_df
+        except AttributeError:
+            contacts_dict = (
+                self.db_handler.query("SELECT * FROM Contact")
+                .set_index("id")        # to pop off the contact id before indexing with person
+                .set_index("person_id")
+                .apply(lambda x: [x.to_dict()], axis=1)
+                .groupby("person_id").sum().to_dict()
+            )
+
+            output = (
+                self.db_handler.query("SELECT * FROM Person")
+                .rename(columns={"id": "person_id"})
+            )
+            output["contacts"] =  output["person_id"].apply(lambda x: contacts_dict.get(x, []))
+            self.__simplified_persons_df = output
+            return self.__simplified_persons_df
+
     def get_simplified_subgenre_df(self):
         return self.db_handler.query("SELECT * FROM SubgenreView")
 

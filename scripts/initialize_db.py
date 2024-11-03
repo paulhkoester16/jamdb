@@ -37,17 +37,9 @@ if __name__ == "__main__":
         db_handler = BackendSQLite(db_file)
 
         ods_file = OLD_DATA_DIR / "public.ods"
-        ods_file_private = OLD_DATA_DIR / "private.ods"
-        table_metadata = read_ods(ods_file, "table_metadata")
-        relations = read_ods(ods_file, "relations")
 
         for table_name in db_handler._sorted_tables():
-            if table_name == "Person":
-                pub = read_ods(ods_file, "Person")
-                priv = read_ods(ods_file_private, "PersonPrivate")
-                table = pub.merge(priv, on="id")
-            else:
-                table = read_ods(ods_file, table_name)
+            table = read_ods(ods_file, table_name)
 
             for _, row in table.iterrows():
                 try:

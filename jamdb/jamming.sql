@@ -4,7 +4,11 @@ DROP TABLE IF EXISTS [_schema_tables];
 
 DROP TABLE IF EXISTS [_schema_columns];
 
+DROP TABLE IF EXISTS [Charts];
+
 DROP TABLE IF EXISTS [Composer];
+
+DROP TABLE IF EXISTS [Contact];
 
 DROP TABLE IF EXISTS [EventGen];
 
@@ -16,19 +20,19 @@ DROP TABLE IF EXISTS [Instrument];
 
 DROP TABLE IF EXISTS [Key];
 
+DROP TABLE IF EXISTS [Mode];
+
 DROP TABLE IF EXISTS [Person];
 
 DROP TABLE IF EXISTS [PersonInstrument];
+
+DROP TABLE IF EXISTS [RefRecs];
 
 DROP TABLE IF EXISTS [Setlist];
 
 DROP TABLE IF EXISTS [SetlistSongs];
 
 DROP TABLE IF EXISTS [Song];
-
-DROP TABLE IF EXISTS [RefRecs];
-
-DROP TABLE IF EXISTS [Charts];
 
 DROP TABLE IF EXISTS [SongLearn];
 
@@ -38,7 +42,7 @@ DROP TABLE IF EXISTS [SubGenre];
 
 DROP TABLE IF EXISTS [Venue];
 
-DROP TABLE IF EXISTS [Mode];
+
 
 /****  Create Tables ******************************/
 
@@ -78,11 +82,17 @@ CREATE TABLE Person (
 	id	TEXT	NOT NULL,
 	public_name	TEXT	NOT NULL	UNIQUE,
 	full_name	TEXT	NOT NULL	UNIQUE,
-    facebook	TEXT	DEFAULT "",
-    instagram	TEXT	DEFAULT "",
-    youtube	TEXT	DEFAULT "",
-    other_contact	TEXT	DEFAULT "",
 	PRIMARY KEY	(id)
+);
+
+CREATE TABLE Contact (
+	id	TEXT	NOT NULL,
+	person_id	TEXT	NOT NULL,
+	contact_type	TEXT	NOT NULL,
+	contact_info	TEXT	DEFAULT "",
+	link	TEXT	DEFAULT "",
+	PRIMARY KEY	(id),
+	FOREIGN KEY (person_id) REFERENCES Person (id)
 );
 
 CREATE TABLE Genre (
@@ -178,8 +188,6 @@ CREATE TABLE Song (
 	instrumental	TEXT,
 	key_id	TEXT,
 	composer_id	TEXT,
-	reference_recordings	TEXT	DEFAULT "",
-	charts	TEXT	DEFAULT "",
 	PRIMARY KEY	(id),
 	FOREIGN KEY (subgenre_id) REFERENCES SubGenre (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id),
@@ -422,28 +430,34 @@ CREATE INDEX IFK_SubGenregenre_id ON Genre (id);
 /*** Populate Schema Tables *******************/
 
 INSERT INTO _schema_tables (table_name, description) VALUES
+	("Charts", "Links to charts for songs."),    
 	("Composer", "Composer information"),
+	("Contact", "Contact information for a person, e.g., social media links."),
 	("EventGen", "Recurring events, including event's venue and the recurrence pattern.  Due to the data design, even one-off gigs are defined in EventGen."),
 	("EventOcc", "Specific events, including the event's specific date and EventGen that it derives from."),
 	("Genre", "Coarse genre information. Genres are at the level of 'Jazz' vs 'Blues', etc.  See also `SubGrenre`."),
 	("Instrument", "Instrument information."),
 	("Key", "Key signature / mode information."),
+	("Mode", "Information about mode."),
 	("Person", "Public Information about a person."),
 	("PersonInstrument", "Which instruments are played by a given person."),
+	("RefRecs", "Links to reference recordings of songs."),
 	("Setlist", "Setlist information."),
 	("SetlistSongs", "Information about songs on a Setlist, including song name, key, and which instrument I will play."),
 	("Song", "Information about a song, including song name, key, etc."),
-	("RefRecs", "Links to reference recordings of songs."),
-	("Charts", "Links to charts for songs."),
 	("SongLearn", "Information about songs that I've learned, including instrument, key, and when I learned it."),
 	("SongPerform", "Information about a particular performance of a song, including which instrument I played, which event I played at, and who else played."),
 	("SubGenre", "Granular genre information. SubGenres can be at the level of 'Bop' vs 'Swing', etc.  See also `Grenre`."),
-	("Venue", "Information about a physical venue, including venue name, address, etc."),
-	("Mode", "Information about mode.");
+	("Venue", "Information about a physical venue, including venue name, address, etc.");
 
 INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Composer", "id", "Unique ID for Composer."),
 	("Composer", "composer", "Composer name."),
+	("Contact", "id", "Unique ID for Contact info."),
+	("Contact", "person_id", "ID for the Contact's person."),
+	("Contact", "contact_type", "The kind of contact, e.g., Facebook vs YouTube etc."),
+	("Contact", "contact_info", "Free form text contact info, like phone numbers, etc."),
+	("Contact", "link", "Hyperlink, e.g., for Facebook etc."),
 	("EventGen", "id", "Unique ID for EventGen."),
 	("EventGen", "name", "Name of EventGen, e.g., 'Jazz Madcats'"),
 	("EventGen", "genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
@@ -465,10 +479,6 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Person", "id", "Unique ID for Person."),
 	("Person", "public_name", "Person's publicly used name, typically their first name and last initial."),
 	("Person", "full_name", "Person's full name."),
-	("Person", "facebook", "Person's Facebook link(s)."),
-	("Person", "instagram", "Person's Instagram link(s)."),
-	("Person", "youtube", "Person's Youtube link(s)."),
-	("Person", "other_contact", "Other contact information for Person."),
 	("PersonInstrument", "id", "Unique ID for PersonInstrument."),
 	("PersonInstrument", "person_id", "ID of the Person."),
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
@@ -486,8 +496,6 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Song", "instrumental", "Boolean as to if the song is an instrumental or not."),
 	("Song", "key_id", "ID of the Song's Key."),
 	("Song", "composer_id", "ID of the Song's Composer."),
-	("Song", "reference_recordings", "Link(s) to reference recordings, e.g., YouTube links or Spotify URLs"),
-	("Song", "charts", "Link(s) to reference charts."),
 	("RefRecs", "id", "Unique ID of the RefRec."),
 	("RefRecs", "song_id", "ID of the RefRec's song"),
 	("RefRecs", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
