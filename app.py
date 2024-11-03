@@ -64,7 +64,7 @@ def performed_songs_summaries():
     ]
     summaries = sorted(
         summaries,
-        key=lambda song: (song["event_occ"]["date"], song["song"]["song"])
+        key=lambda song: (song["event_occ"]["event_occ_date"], song["song"]["song"])
     )
     summaries_by_event = defaultdict(list)
     for summary in summaries:
@@ -72,7 +72,7 @@ def performed_songs_summaries():
     summaries_by_event = list(summaries_by_event.values())
     summaries_by_event = sorted(
         summaries_by_event,
-        key=lambda event: event[0]["event_occ"]["date"]
+        key=lambda event: event[0]["event_occ"]["event_occ_date"]
     )
 
     return render_template("performed_songs_summaries.html", summaries_by_event=summaries_by_event)

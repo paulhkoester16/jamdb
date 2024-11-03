@@ -18,6 +18,10 @@ import pandas as pd
 import copy
 import json
 
+def fill_na_to_list(df, col, tmp_fill=""):
+    df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
+
+
 class Resolver:
     # TODO -- How much of these should be defined as VIEWS in the DB?
 
@@ -231,21 +235,7 @@ class Resolver:
         ]
 
     def get_simplified_event_occ_df(self):
-        try:
-            return self.__simplified_event_df
-        except AttributeError:
-            self.__simplified_event_df = self.db_handler.query(
-                """
-                SELECT o.id, o.name as event, v.venue, o.date
-                FROM
-                    EventOcc as o
-                INNER JOIN EventGen as g
-                    ON o.event_gen_id = g.id
-                INNER JOIN Venue as v
-                    ON g.venue_id = v.id
-                """
-            )
-            return self.__simplified_event_df
+        return self.db_handler.query("SELECT * FROM EventOccView")
 
     def _person_mapping(self):
         try:
@@ -258,103 +248,40 @@ class Resolver:
         return mapping
     
     def get_simplified_subgenre_df(self):
-        try:
-            return self.__simplified_subgenre_df
-        except AttributeError:
-            # refactor as DB VIEW
-            output = (
-                self.db_handler.query(
-                    """
-                    SELECT s.id, s.subgenre, g.genre
-                    FROM SubGenre as s
-                    INNER JOIN Genre as g
-                    ON g.id = s.genre_id
-                    """
-                )
-            )
-            self.__simplified_subgenre_df = output
-            return self.__simplified_subgenre_df
+        return self.db_handler.query("SELECT * FROM SubgenreView")
 
     def get_simplified_key_df(self):
-        try:
-            return self.__simplified_key_df
-        except AttributeError:
-            # refactor as DB VIEW
-            output = (
-                self.db_handler.query(
-                    """
-                    SELECT k.id, k.root, m.mode_name FROM Key as k
-                    INNER JOIN Mode as m
-                    ON m.id = k.mode_id
-                    """
-                )
-            )
-            self.__simplified_key_df = output
-            return self.__simplified_key_df
+        return self.db_handler.query("SELECT * FROM KeyView")
 
     def get_simplified_songs_df(self):
 
         try:
             return self.__simplified_songs_df
         except AttributeError:
-            def proc_list_of_strings(list_):
-                possible_list = copy.deepcopy(list_)
-                try:
-                    if isinstance(possible_list, str):
-                        possible_list = possible_list.strip()
-                        if possible_list == "":
-                            return []
-                    if isinstance(possible_list, str):
-                        possible_list = possible_list.replace("'", '"')
-                        if possible_list.startswith("["):
-                            possible_list = json.loads(possible_list)
-                        else:
-                            possible_list = possible_list.split(",")
-                    return [x.replace('"', "").strip() for x in possible_list]
-                except Exception as exc:
-                    return list_
-    
-            output = (
-                self.db_handler.query("SELECT * FROM Song")
-                .merge(
-                    self.get_simplified_key_df().rename(columns={"id": "key_id"}),
-                    how="left",
-                    on="key_id",
-                ).merge(
-                    self.get_simplified_subgenre_df().rename(columns={"id": "subgenre_id"}),
-                    on="subgenre_id",
-                    how="left"
-                )
-            ).fillna({col: "" for col in ["root", "mode_name", "subgenre", "genre"]})
-            output["reference_recordings"] = output["reference_recordings"].apply(proc_list_of_strings)
-            output["charts"] = output["charts"].apply(proc_list_of_strings)
-    
-            output = output[[
-                "id", "song", "root", "mode_name", "subgenre", "genre", "reference_recordings", "charts"
-            ]]
+            ref_recs_dict = (
+                self.db_handler.query("SELECT * FROM RefRecs").set_index("song_id")
+                .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
+                .groupby("song_id").sum().to_dict()
+            )
+            charts_dict = (
+                self.db_handler.query("SELECT * FROM Charts").set_index("song_id")
+                .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
+                .groupby("song_id").sum().to_dict()
+            )
+
+            output = self.db_handler.query("SELECT * FROM SongView")
+
+            output["reference_recordings"] =  output["song_id"].apply(lambda x: ref_recs_dict.get(x, []))
+            output["charts"] =  output["song_id"].apply(lambda x: charts_dict.get(x, []))
 
             self.__simplified_songs_df = output
             return self.__simplified_songs_df
 
     def get_simplified_instruments_df(self):
-        output = self.db_handler.query("SELECT id, instrument FROM Instrument")
-        return output
+        return self.db_handler.query("SELECT id, instrument FROM Instrument")
 
     def get_simplified_person_instrument_df(self):
-        try:
-            return self.__simplified_person_instrument_df
-        except AttributeError:
-            self.__simplified_person_instrument_df = self.db_handler.query(
-                """
-                SELECT m.i, p.full_name, p.public_name, i.instrument
-                FROM PersonInstrument as m
-                INNER JOIN Instrument as i
-                ON i.id = m.instrument_id
-                INNER JOIN Person as p
-                ON p.id = m.person_id
-                """
-            ).set_index("id")
-            return self.__simplified_person_instrument_df
+        return self.db_handler.query("SELECT * FROM PersonInstrumentView")
 
     def summarize_person(self, person_id):
 
@@ -374,7 +301,8 @@ class Resolver:
         events_ive_seen_them_at = (
             self.get_simplified_event_occ_df().merge(
                 pd.DataFrame(self.get_event_occ_i_seen_person_at(person_id))[["id"]],
-                on="id"
+                left_on="event_occ_id",
+                right_on="id"
             )
         ).drop(columns=["id"])
 
@@ -385,10 +313,9 @@ class Resolver:
             ]]
             .rename(columns={"id": "performance_id", "instrument_id": "my_instrument_id"})        
         ).merge(
-            self.get_simplified_songs_df()[["id", "song"]],
-            left_on="song_id",
-            right_on="id"
-        ).drop(columns="id").merge(
+            self.get_simplified_songs_df()[["song_id", "song"]],
+            on="song_id"
+        ).merge(
             self.get_simplified_instruments_df().rename(columns={"instrument": "my_instrument"}),
             left_on="my_instrument_id",
             right_on="id"
@@ -398,9 +325,10 @@ class Resolver:
             right_on="id"
         ).drop(columns="id").merge(
             self.get_simplified_event_occ_df(),
-            left_on="event_occ_id",
-            right_on="id",
-        ).sort_values("date")[["song", "my_instrument", "their_instrument", "event", "venue", "date", "video"]]
+            on="event_occ_id"
+        ).sort_values("event_occ_date")[
+        ["song", "my_instrument", "their_instrument", "event_occ", "venue_name", "event_occ_date", "video"]
+        ]
 
         return {
             "person_info": person_info,
@@ -416,9 +344,8 @@ class Resolver:
         performed_song = self.get_song_perf_by_song_perf_id(song_perf_id)
         event_occ_id = performed_song.pop("event_occ_id")
         song_id = performed_song.pop("song_id")
-        event_occ = self.get_simplified_event_occ_df().set_index("id").loc[event_occ_id].to_dict()
-        song = self.get_simplified_songs_df().set_index("id").loc[song_id].to_dict()
-        song["key"] = f'{song.pop("root")} {song.pop("mode_name")}'.strip()
+        event_occ = self.get_simplified_event_occ_df().set_index("event_occ_id").loc[event_occ_id].to_dict()
+        song = self.get_simplified_songs_df().set_index("song_id").loc[song_id].to_dict()
         song["genre"] = f'{song.pop("genre")}: {song.pop("subgenre")}'.strip()
         if song["genre"] == ":":
             song["genre"] = ""
@@ -455,8 +382,7 @@ class Resolver:
 
         key_id = (performed_song["key_id"] or "").strip()
         if key_id != "":
-            key = self.get_simplified_key_df().set_index("id").loc[key_id].to_dict()
-            key = f'{key.pop("root")} {key.pop("mode_name")}'
+            key = self.get_simplified_key_df().set_index("key_id").loc[key_id].to_dict()["key"]
         else:
             key = song["key"]
 
@@ -490,7 +416,7 @@ class Resolver:
         # when, what, where
         # Who was there
         # What songs were played
-        event = self.get_simplified_event_occ_df().set_index("id").loc[event_occ_id].to_dict()
+        event = self.get_simplified_event_occ_df().set_index("event_occ_id").loc[event_occ_id].to_dict()
 
         songs_played = (
             self._song_perform_df.query(f'event_occ_id == "{event_occ_id}"')
@@ -504,9 +430,8 @@ class Resolver:
             lambda row: list(insts.loc[row])
         )
         songs_played = songs_played.merge(
-            self.get_simplified_songs_df()[["id", "song"]],
-            left_on="song_id",
-            right_on="id"
+            self.get_simplified_songs_df()[["song_id", "song"]],
+            on="song_id"
         )
         songs_played = songs_played[["song", "player_public_names", "instruments", "video"]]
 
@@ -555,7 +480,7 @@ class Resolver:
     def overview_event_occs(self):
         def songs_dicts(songs):
             return (
-                self.get_simplified_songs_df().set_index("id")
+                self.get_simplified_songs_df().set_index("song_id")
                 .loc[songs]["song"].reset_index().to_dict(orient="records")
             )
         
@@ -565,16 +490,6 @@ class Resolver:
                 .reset_index().to_dict(orient="records")
             )
         
-        venues = (
-            self.db_handler.query("SELECT * FROM Venue")
-            .rename(columns={"venue": "venue_name", "id": "venue_id"})
-        )[["venue_name", "venue_id"]]
-        
-        simp_event_occ = (
-            self.get_simplified_event_occ_df()
-            .rename(columns={"id": "event_occ_id", "event": "event_occ_name", "venue": "venue_name"})
-        )
-        
         songs_at_event = self._song_perform_df[["event_occ_id", "song_id", "players"]].copy()
         songs_at_event["song_id"] = songs_at_event["song_id"].apply(lambda x: [x]) 
         songs_at_event = songs_at_event.groupby("event_occ_id").sum()
@@ -583,17 +498,19 @@ class Resolver:
         
         songs_at_event["songs"] = songs_at_event["songs"].apply(songs_dicts)
         songs_at_event["players"] = songs_at_event["players"].apply(players_dicts)
-        
-        simp_event_occ = simp_event_occ.merge(
-            venues,
-            on="venue_name"
-        ).merge(
-            songs_at_event,
-            on="event_occ_id"
+
+        simp_event_occ = (
+            self.get_simplified_event_occ_df().merge(
+                songs_at_event,
+                on="event_occ_id",
+                how="left"
+            )
         )
-        
+        fill_na_to_list(simp_event_occ, "players")
+        fill_na_to_list(simp_event_occ, "songs")
+
         simp_event_occ["event"] = simp_event_occ.apply(
-            lambda x: {"id": x["event_occ_id"], "event_name": x["event_occ_name"]},
+            lambda x: {"id": x["event_occ_id"], "event_name": x["event_occ"]},
             axis=1
         )
         
@@ -601,11 +518,7 @@ class Resolver:
             lambda x: {"id": x["venue_id"], "venue_name": x["venue_name"]},
             axis=1
         )
-        
-        simp_event_occ.drop(
-            columns=["event_occ_id", "event_occ_name", "venue_name", "venue_id"],
-            inplace=True
-        )
-        return simp_event_occ.sort_values("date")
+
+        return simp_event_occ.sort_values("event_occ_date")
         
 

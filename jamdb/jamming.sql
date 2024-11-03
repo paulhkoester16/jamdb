@@ -26,6 +26,10 @@ DROP TABLE IF EXISTS [SetlistSongs];
 
 DROP TABLE IF EXISTS [Song];
 
+DROP TABLE IF EXISTS [RefRecs];
+
+DROP TABLE IF EXISTS [Charts];
+
 DROP TABLE IF EXISTS [SongLearn];
 
 DROP TABLE IF EXISTS [SongPerform];
@@ -51,6 +55,7 @@ CREATE TABLE _schema_columns (
 	PRIMARY KEY	(table_name, column),
 	FOREIGN KEY (table_name) REFERENCES _schema_tables (table_name)
 );
+
 
 CREATE TABLE Composer (
 	id	TEXT	NOT NULL,
@@ -94,14 +99,14 @@ CREATE TABLE Instrument (
 
 CREATE TABLE Mode (
 	id	TEXT	NOT NULL,
-	mode_name	TEXT	NOT NULL	UNIQUE,
+	mode	TEXT	NOT NULL	UNIQUE,
 	PRIMARY KEY	(id)
 );
 
 CREATE TABLE EventGen (
 	id	TEXT	NOT NULL,
 	name	TEXT	NOT NULL	UNIQUE,
-	event_genre_id	TEXT	NOT NULL,
+	genre_id	TEXT	NOT NULL,
 	venue_id	TEXT	NOT NULL,
 	date	TEXT	NOT NULL,
 	time	TEXT	NOT NULL,
@@ -109,7 +114,7 @@ CREATE TABLE EventGen (
 	PRIMARY KEY	(id),
 	FOREIGN KEY (venue_id) REFERENCES Venue (id),
 	FOREIGN KEY (host_id) REFERENCES Person (id),
-	FOREIGN KEY (event_genre_id) REFERENCES Genre (id)
+	FOREIGN KEY (genre_id) REFERENCES Genre (id)
 );
 
 CREATE TABLE PersonInstrument (
@@ -153,6 +158,7 @@ CREATE TABLE SongLearn (
 	date	TEXT	NOT NULL,
 	key_id	TEXT,
 	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id),    
 	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
 
@@ -178,6 +184,24 @@ CREATE TABLE Song (
 	FOREIGN KEY (subgenre_id) REFERENCES SubGenre (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id),
 	FOREIGN KEY (composer_id) REFERENCES Composer (id)
+);
+
+CREATE TABLE RefRecs (
+	id	TEXT	NOT NULL,
+	song_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id)
+);
+
+CREATE TABLE Charts (
+	id	TEXT	NOT NULL,
+	song_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id)
 );
 
 CREATE TABLE SetlistSongs (
@@ -240,6 +264,85 @@ CREATE TABLE SongPerform (
 );
 
 
+/***** Create Views *********************************************/
+
+CREATE VIEW SubgenreView AS
+    SELECT
+        s.id as subgenre_id, s.genre_id, s.subgenre, g.genre
+    FROM Subgenre as s
+    INNER JOIN Genre as g
+        ON s.genre_id = g.id;
+
+CREATE VIEW KeyView AS
+    SELECT
+        k.id as key_id, k.mode_id, k.root, m.mode, k.root || ' ' || m.mode as key
+    FROM Key as k
+    INNER JOIN Mode as m
+        ON k.mode_id = m.id;
+
+CREATE VIEW EventGenView AS
+    SELECT 
+        e.id as event_gen_id,
+        e.genre_id,
+        e.venue_id,
+        e.host_id,
+        e.date as event_gen_date,
+        e.time as event_gen_time,
+        e.name as event_gen,
+        v.venue as venue_name,
+        v.address as venue_address,
+        v.city as venue_city,
+        v.zip as venue_zip,
+        v.state as venue_state,
+        v.web as venue_web,
+        g.genre,
+        p.public_name as host_public_name,
+        p.full_name as host_full_name
+    FROM EventGen as e
+    INNER JOIN Venue as v
+        ON e.venue_id = v.id
+    INNER JOIN Genre as g
+        ON e.genre_id = g.id
+    LEFT JOIN Person as p
+        ON e.host_id = p.id;
+
+CREATE VIEW EventOccView AS
+    SELECT
+        o.id as event_occ_id,
+        o.name as event_occ,
+        o.date as event_occ_date,
+        g.*
+    FROM EventOcc as o
+    INNER JOIN EventGenView as g
+        ON o.event_gen_id = g.event_gen_id;
+
+CREATE VIEW PersonInstrumentView AS
+    SELECT
+        a.id as person_instrument_id,
+        a.instrument_id,
+        i.instrument,
+        p.*
+    FROM PersonInstrument as a
+    INNER JOIN Person as p
+        ON a.person_id = p.id
+    INNER JOIN Instrument as i
+        ON a.instrument_id = i.id;
+
+CREATE VIEW SongView AS
+    SELECT
+        s.id as song_id,
+        s.song,
+        s.composer_id,
+        s.instrumental,
+        k.*,
+        sg.*
+    FROM Song as s
+    LEFT JOIN KeyView as k
+        ON s.key_id = k.key_id
+    LEFT JOIN SubgenreView as sg
+        ON s.subgenre_id = sg.subgenre_id;
+
+
 /***** Create Foreign Keys Constraints **************************/
 
 CREATE INDEX IFK__schema_columnstable_name ON _schema_tables (table_name);
@@ -248,7 +351,7 @@ CREATE INDEX IFK_EventGenvenue_id ON Venue (id);
 
 CREATE INDEX IFK_EventGenhost_id ON Person (id);
 
-CREATE INDEX IFK_EventGenevent_genre_id ON Genre (id);
+CREATE INDEX IFK_EventGen_genre_id ON Genre (id);
 
 CREATE INDEX IFK_EventOccevent_gen_id ON EventGen (id);
 
@@ -330,6 +433,8 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("Setlist", "Setlist information."),
 	("SetlistSongs", "Information about songs on a Setlist, including song name, key, and which instrument I will play."),
 	("Song", "Information about a song, including song name, key, etc."),
+	("RefRecs", "Links to reference recordings of songs."),
+	("Charts", "Links to charts for songs."),
 	("SongLearn", "Information about songs that I've learned, including instrument, key, and when I learned it."),
 	("SongPerform", "Information about a particular performance of a song, including which instrument I played, which event I played at, and who else played."),
 	("SubGenre", "Granular genre information. SubGenres can be at the level of 'Bop' vs 'Swing', etc.  See also `Grenre`."),
@@ -341,7 +446,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Composer", "composer", "Composer name."),
 	("EventGen", "id", "Unique ID for EventGen."),
 	("EventGen", "name", "Name of EventGen, e.g., 'Jazz Madcats'"),
-	("EventGen", "event_genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
+	("EventGen", "genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
 	("EventGen", "venue_id", "ID of the event's venue."),
 	("EventGen", "date", "Recurrence patter, eg. '3rd Thursday'"),
 	("EventGen", "time", "Time of the event, eg., '4:00 pm - 7:00 pm'"),
@@ -383,6 +488,14 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Song", "composer_id", "ID of the Song's Composer."),
 	("Song", "reference_recordings", "Link(s) to reference recordings, e.g., YouTube links or Spotify URLs"),
 	("Song", "charts", "Link(s) to reference charts."),
+	("RefRecs", "id", "Unique ID of the RefRec."),
+	("RefRecs", "song_id", "ID of the RefRec's song"),
+	("RefRecs", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("RefRecs", "link", "Link, etc., url or uri"),
+	("Charts", "id", "Unique ID of the Chart."),
+	("Charts", "song_id", "ID of the Chart's song"),
+	("Charts", "source", "Source of the chart, e.g., web link or iReal, etc."),
+	("Charts", "link", "Link, etc., url or uri"),
 	("SongLearn", "id", "Unique ID of the SongLearn."),
 	("SongLearn", "song_id", "ID of the Song."),
 	("SongLearn", "instrument_id", "ID of the Instrument I learned the Song on."),
@@ -421,4 +534,4 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Venue", "state", "State of the Venue."),
 	("Venue", "web", "Link(s) to Venue's website."),
 	("Mode", "id", "Unique ID of the mode."),
-	("Mode", "mode_name", "Descriptive name of the mode.");
+	("Mode", "mode", "Descriptive name of the mode.");
