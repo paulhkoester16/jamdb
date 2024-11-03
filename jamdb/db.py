@@ -98,7 +98,7 @@ class BackendSQLite(Backend):
         if value is None:
             value = self.data_dir / "jamming.db"
         self.__db_file = Path(value)
-        self._connect()
+        self._connect(self.__db_file)
         self._set_entities()
 
     @property
@@ -152,8 +152,10 @@ class BackendSQLite(Backend):
     def cursor(self):
         return self.conn.cursor()
 
-    def _connect(self):
-        conn = sqlite3.connect(self.db_file)
+    def _connect(self, db_file=None):
+        if db_file is None:
+            db_file = self.db_file
+        conn = sqlite3.connect(db_file)
         if self._enforce_fks:
             # I still can't believe that this can't be set permanently when initing db.
             cursor = conn.cursor()
