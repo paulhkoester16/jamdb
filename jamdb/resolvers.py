@@ -550,3 +550,62 @@ class Resolver:
         #     except FileNotFoundError:
         #         pass
         #     print("\n")
+
+
+    def overview_event_occs(self):
+        def songs_dicts(songs):
+            return (
+                self.get_simplified_songs_df().set_index("id")
+                .loc[songs]["song"].reset_index().to_dict(orient="records")
+            )
+        
+        def players_dicts(players):
+            return (
+                self._person_mapping().loc[players][["public_name", "full_name"]]
+                .reset_index().to_dict(orient="records")
+            )
+        
+        venues = (
+            self.db_handler.query("SELECT * FROM Venue")
+            .rename(columns={"venue": "venue_name", "id": "venue_id"})
+        )[["venue_name", "venue_id"]]
+        
+        simp_event_occ = (
+            self.get_simplified_event_occ_df()
+            .rename(columns={"id": "event_occ_id", "event": "event_occ_name", "venue": "venue_name"})
+        )
+        
+        songs_at_event = self._song_perform_df[["event_occ_id", "song_id", "players"]].copy()
+        songs_at_event["song_id"] = songs_at_event["song_id"].apply(lambda x: [x]) 
+        songs_at_event = songs_at_event.groupby("event_occ_id").sum()
+        songs_at_event["players"] = songs_at_event["players"].apply(lambda x: sorted(list(set(x))))
+        songs_at_event = songs_at_event.reset_index().rename(columns={"song_id": "songs"})
+        
+        songs_at_event["songs"] = songs_at_event["songs"].apply(songs_dicts)
+        songs_at_event["players"] = songs_at_event["players"].apply(players_dicts)
+        
+        simp_event_occ = simp_event_occ.merge(
+            venues,
+            on="venue_name"
+        ).merge(
+            songs_at_event,
+            on="event_occ_id"
+        )
+        
+        simp_event_occ["event"] = simp_event_occ.apply(
+            lambda x: {"id": x["event_occ_id"], "event_name": x["event_occ_name"]},
+            axis=1
+        )
+        
+        simp_event_occ["venue"] = simp_event_occ.apply(
+            lambda x: {"id": x["venue_id"], "venue_name": x["venue_name"]},
+            axis=1
+        )
+        
+        simp_event_occ.drop(
+            columns=["event_occ_id", "event_occ_name", "venue_name", "venue_id"],
+            inplace=True
+        )
+        return simp_event_occ.sort_values("date")
+        
+
