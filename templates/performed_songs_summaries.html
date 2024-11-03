@@ -1,0 +1,103 @@
+<!doctype html> 
+<html lang="en"> 
+  
+<head>
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <title>Performed Song Summaries</title> 
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+</head>
+    
+<body>
+  <div class="page-header">
+    <h1>Performed Song Summaries</h1>
+  </div>
+
+  {% for summaries in summaries_by_event %}
+    <div> <!-- class="container"> -->
+    <details class="well">
+    <summary>
+      <h4>
+        Songs performed at {{summaries[0]["event_occ"]["event"]}}
+        <span class="badge">{{summaries|length}}</span>
+      </h4>
+    </summary>
+      {% for song_summary in summaries %}
+        <details class="well well-sm">
+        <summary><h4>{{song_summary["song"]["song"]}}</h4></summary>
+        <!--<div>Performed at {{song_summary["event_occ"]["event"]}}</div> -->
+        <div class="row">
+          <div class="col-lg-6">
+            <dl>
+            <dt>Venue</dt>
+            <dd>- {{song_summary["event_occ"]["venue"]}}</dd>
+            <dt>Date</dt>
+            <dd>- {{song_summary["event_occ"]["date"]}}</dd>
+            {% if song_summary["key_performed"] != "" %}
+            <dt>Key performed in</dt>
+            <dd>- {{song_summary["key_performed"]}}</dd>
+            {% endif %}
+            {% set link = song_summary.get("video", {}).get("link", "") %}
+            {% if link != "" %}
+            <dt>Performance video</dt>
+            <dd>- <a href="{{link}}">{{link}}</a></dd>
+                <!-- Page takes long to render with all the embedded links -- only use the embed on single element pages..
+                    <iframe width="300" src="{{song_summary['video']['embeddable']}}"></iframe>  -->
+            {% endif %}
+
+            {% set links = song_summary["song"].get("reference_recordings", []) %}
+            {% if links != [] %}
+              <dt>Reference recordings</dt>
+              {% for link in links %}
+                <dd>- <a href="{{link}}">{{link}}</a> </dd>
+              {% endfor %}
+            {% endif %}
+
+            {% set links = song_summary["song"].get("charts", []) %}
+            {% if links != [] %}
+              <dt>Charts</dt>
+              {% for link in links %}
+                <dd>- <a href="{{link}}">{{link}}</a> </dd>
+              {% endfor %}
+            {% endif %}
+            </dl>              
+          </div>
+          <div class="col-lg-6">
+            <!-- <dl>
+              {% for player in song_summary["people_who_played"] %}
+                <dt>{{player["public_name"]}}</dt>
+                {% for inst in player["instruments"] %}
+                  <dd> - {{inst}}</dd>
+                {% endfor %}
+              {% endfor %}
+            </dl> -->
+            <table class="table table-bordered">
+            <head><tr><th>Player</th><th>Instrument</th></tr></head>
+            <body>
+              {% for player in song_summary["people_who_played"] %}
+                <tr>
+                  <td>{{player["public_name"]}}</td>
+                  <td>{{", ".join(player["instruments"])}}</td>
+                </tr>
+              {% endfor %}
+            </body>
+            </table>
+          </div>
+        </div>
+        </details>
+      {% endfor %}
+    </details>
+    </div>        
+  {% endfor %}
+
+
+</body>
+
+</html>
+
+
+
+

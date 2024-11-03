@@ -1,7 +1,9 @@
+from collections import defaultdict
 from flask import Flask, request, render_template
 from wtforms import Form, SelectField, SubmitField
 
 from jamdb.db import db_factory
+from jamdb.resolvers import Resolver
 
 DB_FILE = "data/jamming.db"
 
@@ -49,6 +51,31 @@ def get_row():
     if request.method == "POST" and form.table_name.data:
         form.primary_key.choices = form.possible_pk_choices(form.table_name.data)
     return render_template("get_row.html", form=form)
+
+
+@app.route("/performed-songs-summaries/", methods=["GET"])
+def performed_songs_summaries():
+
+    db_handler = db_factory(DB_FILE)
+    resolver = Resolver(db_handler)
+    summaries = [
+        resolver.summarize_performed_song(id_)
+        for id_ in resolver.db_handler.query("SELECT * FROM SongPerform ORDER BY song_id")["id"]
+    ]
+    summaries = sorted(
+        summaries,
+        key=lambda song: (song["event_occ"]["date"], song["song"]["song"])
+    )
+    summaries_by_event = defaultdict(list)
+    for summary in summaries:
+        summaries_by_event[summary["event_occ"]["event"]].append(summary)
+    summaries_by_event = list(summaries_by_event.values())
+    summaries_by_event = sorted(
+        summaries_by_event,
+        key=lambda event: event[0]["event_occ"]["date"]
+    )
+
+    return render_template("performed_songs_summaries.html", summaries_by_event=summaries_by_event)
 
 
 @app.route('/get-row-read/', methods=['POST']) 
