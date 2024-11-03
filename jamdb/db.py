@@ -13,14 +13,12 @@ import graphviz
 import pandas as pd
 
 from .entities import entity_factory
-from .globals import me_id
+from .globals import ME_ID
 
 # set a global or evn variable for db_file = "jamming.db"
 
-def db_factory(db_file):
-    # db_file = "data/jamming.db"
-    db_file = Path(db_file)
-    db_handler = BackendSQLite(db_file)
+def db_factory(data_dir, db_file=None):
+    db_handler = BackendSQLite(data_dir, db_file)
     return db_handler
 
 
@@ -56,11 +54,17 @@ def _parse_sql_file(sql_file):
     return commands
 
 
-def init_db(sql_file, db_file, force_rebuild=False):
+def init_db(sql_file, data_dir, db_file=None, force_rebuild=False):
 
+    data_dir = Path(data_dir)
+    data_dir.mkdir(exist_ok=True)    
+    if db_file is None:
+        db_file = data_dir / "jamming.db"
+    db_file = Path(db_file)
     if force_rebuild:
         db_file.unlink(missing_ok=True)
-    db_handler = BackendSQLite(db_file)
+
+    db_handler = BackendSQLite(data_dir=data_dir, db_file=db_file)
 
     commands = _parse_sql_file(sql_file)
     for command in commands:
@@ -80,9 +84,10 @@ class Backend:
 class BackendSQLite(Backend):
     _enforce_fks = True
 
-    def __init__(self, db_file):
-        self.db_file = Path(db_file)
-        self.me = me_id
+    def __init__(self, data_dir, db_file=None):
+        self.data_dir = Path(data_dir)
+        self.db_file = db_file
+        self.me = ME_ID
 
     @property
     def db_file(self):
@@ -90,6 +95,8 @@ class BackendSQLite(Backend):
 
     @db_file.setter
     def db_file(self, value):
+        if value is None:
+            value = self.data_dir / "jamming.db"
         self.__db_file = Path(value)
         self._connect()
         self._set_entities()

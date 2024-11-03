@@ -20,11 +20,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog='initialize_jam_db')
 
-    parser.add_argument('db_file')
+    parser.add_argument('data_dir')
+    parser.add_argument('--db_file')
     parser.add_argument('--force_rebuild', action="store_true")
 
     args = parser.parse_args()
-    db_file = Path(args.db_file)
+
+    data_dir = Path(args.data_dir)
+    db_file = args.db_file
+    if db_file is None:
+        db_file = data_dir / "jamming.db"
+    db_file = Path(db_file)
     force_rebuild = args.force_rebuild
 
     if force_rebuild:
@@ -33,8 +39,8 @@ if __name__ == "__main__":
     if db_file.exists():
         print(f"Done!  {db_file=} already exists.")
     else:
-        init_db(SQL_FILE, db_file)
-        db_handler = BackendSQLite(db_file)
+        init_db(SQL_FILE, data_dir=data_dir, db_file=db_file)
+        db_handler = BackendSQLite(data_dir=data_dir, db_file=db_file)
 
         ods_file = OLD_DATA_DIR / "public.ods"
 

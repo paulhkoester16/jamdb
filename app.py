@@ -4,11 +4,12 @@ from wtforms import Form, SelectField, SubmitField
 
 from jamdb.db import db_factory
 from jamdb.resolvers import Resolver
-
-DB_FILE = "data/jamming.db"
+from jamdb.globals import DATA_DIR
 
 app = Flask(__name__) 
 
+def init_db_handler():
+    return db_factory(data_dir=DATA_DIR)
 
 class GetRowForm(Form):
 
@@ -17,7 +18,7 @@ class GetRowForm(Form):
     submit = SubmitField("submit")
 
     def possible_table_choices(self):
-        db_handler = db_factory(DB_FILE)
+        db_handler = init_db_handler()
         choices = [("", "--choose--")]
         choices.extend(
             [
@@ -27,7 +28,7 @@ class GetRowForm(Form):
         return choices
 
     def possible_pk_choices(self, table_name):
-        db_handler = db_factory(DB_FILE)
+        db_handler = init_db_handler()
         choices = [("", "--choose--")]
         ent = db_handler.entities.get(table_name)
         if ent is not None:
@@ -56,7 +57,7 @@ def get_row():
 @app.route("/performed-songs-summaries/", methods=["GET"])
 def performed_songs_summaries():
 
-    db_handler = db_factory(DB_FILE)
+    db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = [
         resolver.summarize_performed_song(id_)
@@ -80,7 +81,7 @@ def performed_songs_summaries():
 
 @app.route('/get-row-read/', methods=['POST']) 
 def get_row_read():
-    db_handler = db_factory(DB_FILE)
+    db_handler = init_db_handler()
     print(f"get-row-read:  {request.method}")    
     data = request.form
     print(data)
@@ -93,7 +94,7 @@ def get_row_read():
 
 @app.route("/overview-event-occs/", methods=["GET"])
 def overview_event_occs():
-    db_handler = db_factory(DB_FILE)
+    db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = resolver.overview_event_occs().to_dict(orient="records")
     return render_template("overview_event_occs.html", summaries=summaries)
@@ -101,7 +102,7 @@ def overview_event_occs():
 
 # @app.route("/overview-performed-songs/", methods=["GET"])
 # def overview_performed_songs():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     resolver = Resolver(db_handler)
 #     summaries = resolver.overview_performed_songs().to_dict(orient="records")
 #     return render_template("overview_performed_songs.html", summaries=summaries)
@@ -109,7 +110,7 @@ def overview_event_occs():
 
 # @app.route("/overview-songs/", methods=["GET"])
 # def overview_songs():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     resolver = Resolver(db_handler)
 #     summaries = resolver.overview_songs().to_dict(orient="records")
 #     return render_template("overview_songs.html", summaries=summaries)
@@ -117,7 +118,7 @@ def overview_event_occs():
 
 # @app.route("/overview-people/", methods=["GET"])
 # def overview_people():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     resolver = Resolver(db_handler)
 #     summaries = resolver.overview_people().to_dict(orient="records")
 #     return render_template("overview_people.html", summaries=summaries)
@@ -125,25 +126,25 @@ def overview_event_occs():
 
 # @app.route("/detail-event-occ/", methods=["GET", "POST"])
 # def detail_event_occ():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     return render_template("detail_event_occ.html")
 
 
 # @app.route("/detail-performed-song/", methods=["GET", "POST"])
 # def detail_performed_song():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     return render_template("detail_performed_song.html")
 
 
 # @app.route("/detail-song/", methods=["GET", "POST"])
 # def detail_performed_song():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     return render_template("detail_song.html")
 
 
 @app.route("/detail-person/<string:person_id>")
 def detail_person(person_id):
-    db_handler = db_factory(DB_FILE)
+    db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     person = resolver._person_mapping().loc[person_id].to_dict()
 
@@ -159,7 +160,7 @@ def detail_person(person_id):
 
 # @app.route("/detail-venue/", methods=["GET", "POST"])
 # def detail_venue():
-#     db_handler = db_factory(DB_FILE)
+#     db_handler = init_db_handler()
 #     return render_template("detail_venue.html")
 
 
