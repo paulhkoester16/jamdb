@@ -26,6 +26,8 @@ DROP TABLE IF EXISTS [Person];
 
 DROP TABLE IF EXISTS [PersonInstrument];
 
+DROP TABLE IF EXISTS [PerformanceVideo];
+
 DROP TABLE IF EXISTS [RefRecs];
 
 DROP TABLE IF EXISTS [Setlist];
@@ -38,11 +40,11 @@ DROP TABLE IF EXISTS [SongLearn];
 
 DROP TABLE IF EXISTS [SongPerform];
 
+DROP TABLE IF EXISTS [SongPerformer];
+
 DROP TABLE IF EXISTS [SubGenre];
 
 DROP TABLE IF EXISTS [Venue];
-
-
 
 /****  Create Tables ******************************/
 
@@ -271,6 +273,24 @@ CREATE TABLE SongPerform (
 	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
 
+CREATE TABLE SongPerformer (
+	id	TEXT	NOT NULL,
+	song_perform_id	TEXT	NOT NULL,
+	person_instrument_id	TEXT	NOT NULL,
+    PRIMARY KEY (id),
+	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id),
+	FOREIGN KEY (person_instrument_id) REFERENCES PersonInstrument (id),
+    UNIQUE(song_perform_id, person_instrument_id)
+);
+
+CREATE TABLE PerformanceVideo (
+	id	TEXT	NOT NULL,
+	song_perform_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+    PRIMARY KEY (id),
+	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id)
+);
 
 /***** Create Views *********************************************/
 
@@ -439,6 +459,7 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("Instrument", "Instrument information."),
 	("Key", "Key signature / mode information."),
 	("Mode", "Information about mode."),
+	("PerformanceVideo", "Video link for a performed song."),
 	("Person", "Public Information about a person."),
 	("PersonInstrument", "Which instruments are played by a given person."),
 	("RefRecs", "Links to reference recordings of songs."),
@@ -446,11 +467,18 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("SetlistSongs", "Information about songs on a Setlist, including song name, key, and which instrument I will play."),
 	("Song", "Information about a song, including song name, key, etc."),
 	("SongLearn", "Information about songs that I've learned, including instrument, key, and when I learned it."),
-	("SongPerform", "Information about a particular performance of a song, including which instrument I played, which event I played at, and who else played."),
+	("SongPerform", "Information about a particular performance of a song."),
+	("SongPerformer", "Information about performers on a given performed song."),
 	("SubGenre", "Granular genre information. SubGenres can be at the level of 'Bop' vs 'Swing', etc.  See also `Grenre`."),
 	("Venue", "Information about a physical venue, including venue name, address, etc.");
 
+
+
 INSERT INTO _schema_columns (table_name, column, description) VALUES
+	("Charts", "id", "Unique ID of the Chart."),
+	("Charts", "song_id", "ID of the Chart's song"),
+	("Charts", "source", "Source of the chart, e.g., web link or iReal, etc."),
+	("Charts", "link", "Link, etc., url or uri"),    
 	("Composer", "id", "Unique ID for Composer."),
 	("Composer", "composer", "Composer name."),
 	("Contact", "id", "Unique ID for Contact info."),
@@ -476,12 +504,22 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Key", "id", "Unique ID for key."),
 	("Key", "root", "Root note of key, e.g, “Bb” or F#”, etc."),
 	("Key", "mode_id", "ID of the mode."),
+	("Mode", "id", "Unique ID of the mode."),
+	("Mode", "mode", "Descriptive name of the mode."),
+	("PerformanceVideo", "id", "Unique ID of the PerformanceVideo"),
+	("PerformanceVideo", "song_perform_id", "ID of the SongPerform"),
+	("PerformanceVideo", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("PerformanceVideo", "link", "Link, etc., url or uri"),    
 	("Person", "id", "Unique ID for Person."),
 	("Person", "public_name", "Person's publicly used name, typically their first name and last initial."),
 	("Person", "full_name", "Person's full name."),
 	("PersonInstrument", "id", "Unique ID for PersonInstrument."),
 	("PersonInstrument", "person_id", "ID of the Person."),
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
+	("RefRecs", "id", "Unique ID of the RefRec."),
+	("RefRecs", "song_id", "ID of the RefRec's song"),
+	("RefRecs", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("RefRecs", "link", "Link, etc., url or uri"),
 	("Setlist", "id", "Unique ID for SetList."),
 	("Setlist", "setlist", "Name of the SetList."),
 	("Setlist", "description", "Description of the SetList."),
@@ -496,14 +534,6 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Song", "instrumental", "Boolean as to if the song is an instrumental or not."),
 	("Song", "key_id", "ID of the Song's Key."),
 	("Song", "composer_id", "ID of the Song's Composer."),
-	("RefRecs", "id", "Unique ID of the RefRec."),
-	("RefRecs", "song_id", "ID of the RefRec's song"),
-	("RefRecs", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
-	("RefRecs", "link", "Link, etc., url or uri"),
-	("Charts", "id", "Unique ID of the Chart."),
-	("Charts", "song_id", "ID of the Chart's song"),
-	("Charts", "source", "Source of the chart, e.g., web link or iReal, etc."),
-	("Charts", "link", "Link, etc., url or uri"),
 	("SongLearn", "id", "Unique ID of the SongLearn."),
 	("SongLearn", "song_id", "ID of the Song."),
 	("SongLearn", "instrument_id", "ID of the Instrument I learned the Song on."),
@@ -531,6 +561,9 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("SongPerform", "other_player_14", "ID of PersonInstrument for another player who played this song."),
 	("SongPerform", "other_player_15", "ID of PersonInstrument for another player who played this song."),
 	("SongPerform", "other_player_16", "ID of PersonInstrument for another player who played this song."),
+	("SongPerformer", "id", "Unique ID of the SongPerformer."),
+	("SongPerformer", "song_perform_id", "ID of the SongPerformed by the SongPerformer."),
+	("SongPerformer", "person_instrument_id", "ID of the PersonInstrument of the SongPerformer."),
 	("SubGenre", "id", "Unique ID of the SubGenre."),
 	("SubGenre", "subgenre", "Name of the SubGenre.  Subgenre provides more granularity than Genre.  E.g., 'Jazz' as a Genre, 'Bop', 'Swing' etc as SubGenres of 'Jazz'."),
 	("SubGenre", "genre_id", "ID of the Genre."),
@@ -540,6 +573,4 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Venue", "city", "City of the Venue."),
 	("Venue", "zip", "Zipcode of the Venue."),
 	("Venue", "state", "State of the Venue."),
-	("Venue", "web", "Link(s) to Venue's website."),
-	("Mode", "id", "Unique ID of the mode."),
-	("Mode", "mode", "Descriptive name of the mode.");
+	("Venue", "web", "Link(s) to Venue's website.");
