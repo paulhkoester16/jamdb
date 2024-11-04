@@ -235,20 +235,10 @@ class Resolver:
         ]
 
     def get_simplified_event_occ_df(self):
-        return self.db_handler.query("SELECT * FROM EventOccView")
-
-    def _person_mapping(self):
-        # FIXME -- don't need now that we have simplified_persons_df
-        try:
-            mapping = self.__person_map
-        except AttributeError:
-            mapping = self.get_simplified_persons_df().copy()
-            mapping["id"] = mapping["person_id"]
-            mapping.set_index("id", inplace=True)
-            self.__person_map = mapping
-            mapping = self.__person_map
-        return mapping
-
+        df = self.db_handler.query("SELECT * FROM EventOccView")
+        df.index = list(df["event_occ_id"])
+        return df
+    
     def get_simplified_persons_df(self):
         try:
             return self.__simplified_persons_df
@@ -266,17 +256,22 @@ class Resolver:
                 .rename(columns={"id": "person_id"})
             )
             output["contacts"] =  output["person_id"].apply(lambda x: contacts_dict.get(x, []))
+            output.index = list(output["person_id"])
             self.__simplified_persons_df = output
+            
             return self.__simplified_persons_df
 
     def get_simplified_subgenre_df(self):
-        return self.db_handler.query("SELECT * FROM SubgenreView")
+        df = self.db_handler.query("SELECT * FROM SubgenreView")
+        df.index = list(df["subgenre_id"])
+        return df
 
     def get_simplified_key_df(self):
-        return self.db_handler.query("SELECT * FROM KeyView")
+        df = self.db_handler.query("SELECT * FROM KeyView")
+        df.index = list(df["key_id"])
+        return df
 
     def get_simplified_songs_df(self):
-
         try:
             return self.__simplified_songs_df
         except AttributeError:
@@ -296,14 +291,22 @@ class Resolver:
             output["reference_recordings"] =  output["song_id"].apply(lambda x: ref_recs_dict.get(x, []))
             output["charts"] =  output["song_id"].apply(lambda x: charts_dict.get(x, []))
 
-            self.__simplified_songs_df = output
+            output.index = list(output["song_id"])
+            self.__simplified_songs_df = output            
             return self.__simplified_songs_df
 
     def get_simplified_instruments_df(self):
-        return self.db_handler.query("SELECT id, instrument FROM Instrument")
+        df = self.db_handler.query("SELECT id as instrument_id, instrument FROM Instrument")
+        df.index = list(df["instrument_id"])
+        return df
 
     def get_simplified_person_instrument_df(self):
-        return self.db_handler.query("SELECT * FROM PersonInstrumentView")
+        df = (
+            self.db_handler.query("SELECT * FROM PersonInstrumentView")
+            .rename(columns={"id", "person_instrument_id"})
+        )
+        df.index = list(df["person_instrument_id"])
+        return df
 
     def summarize_person(self, person_id):
 
@@ -338,14 +341,16 @@ class Resolver:
             self.get_simplified_songs_df()[["song_id", "song"]],
             on="song_id"
         ).merge(
-            self.get_simplified_instruments_df().rename(columns={"instrument": "my_instrument"}),
-            left_on="my_instrument_id",
-            right_on="id"
-        ).drop(columns="id").merge(
-            self.get_simplified_instruments_df().rename(columns={"instrument": "their_instrument"}),
-            left_on="their_instrument_id",
-            right_on="id"
-        ).drop(columns="id").merge(
+            self.get_simplified_instruments_df().rename(
+                columns={"instrument": "my_instrument", "instrument_id": "my_instrument_id"}
+            ),
+            on="my_instrument_id"
+        ).merge(
+            self.get_simplified_instruments_df().rename(
+                columns={"instrument": "their_instrument", "instrument_id": "their_instrument_id"}
+            ),
+            on="their_instrument_id"
+        ).merge(
             self.get_simplified_event_occ_df(),
             on="event_occ_id"
         ).sort_values("event_occ_date")[
@@ -366,19 +371,19 @@ class Resolver:
         performed_song = self.get_song_perf_by_song_perf_id(song_perf_id)
         event_occ_id = performed_song.pop("event_occ_id")
         song_id = performed_song.pop("song_id")
-        event_occ = self.get_simplified_event_occ_df().set_index("event_occ_id").loc[event_occ_id].to_dict()
-        song = self.get_simplified_songs_df().set_index("song_id").loc[song_id].to_dict()
+        event_occ = self.get_simplified_event_occ_df().loc[event_occ_id].to_dict()
+        song = self.get_simplified_songs_df().loc[song_id].to_dict()
         song["genre"] = f'{song.pop("genre")}: {song.pop("subgenre")}'.strip()
         if song["genre"] == ":":
             song["genre"] = ""
 
         player_ids = performed_song.pop("players")
         _people = (
-            self._person_mapping().loc[player_ids]
+            self.get_simplified_persons_df().loc[player_ids]
             .to_dict(orient="records")
         )
         _insts = (
-            self.get_simplified_instruments_df().set_index("id")
+            self.get_simplified_instruments_df()
             .loc[performed_song.pop("instruments")].to_dict(orient="records")
         )
         
@@ -404,7 +409,7 @@ class Resolver:
 
         key_id = (performed_song["key_id"] or "").strip()
         if key_id != "":
-            key = self.get_simplified_key_df().set_index("key_id").loc[key_id].to_dict()["key"]
+            key = self.get_simplified_key_df().loc[key_id].to_dict()["key"]
         else:
             key = song["key"]
 
@@ -438,16 +443,17 @@ class Resolver:
         # when, what, where
         # Who was there
         # What songs were played
-        event = self.get_simplified_event_occ_df().set_index("event_occ_id").loc[event_occ_id].to_dict()
+        event = self.get_simplified_event_occ_df().loc[event_occ_id].to_dict()
 
         songs_played = (
             self._song_perform_df.query(f'event_occ_id == "{event_occ_id}"')
             [["song_id", "instrument_id", "video", "players", "instruments"]]
         )
         songs_played["player_public_names"] = songs_played["players"].apply(
-            lambda row: list(self._person_mapping().loc[row]["public_name"])
+            lambda row: list(self.get_simplified_persons_df().loc[row]["public_name"])
         )
-        insts = self.db_handler.query("SELECT * FROM Instrument").set_index("id")["instrument"]
+
+        insts = self.get_simplified_instruments_df()["instrument"]
         songs_played["instruments"] = songs_played["instruments"].apply(
             lambda row: list(insts.loc[row])
         )
@@ -508,7 +514,7 @@ class Resolver:
         
         def players_dicts(players):
             return (
-                self._person_mapping().loc[players][["public_name", "full_name"]]
+                self.get_simplified_persons_df().loc[players][["public_name", "full_name"]]
                 .reset_index().to_dict(orient="records")
             )
         
