@@ -146,7 +146,7 @@ def overview_event_occs():
 def detail_person(person_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
-    person = resolver.get_simplified_persons_df().loc[person_id].to_dict()
+    person = resolver.get_denormalized_persons_df().loc[person_id].to_dict()
     
     contacts = defaultdict(list)
     orig_contacts = person.pop("contacts", [])

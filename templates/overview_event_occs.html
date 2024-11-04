@@ -25,11 +25,11 @@
           <td>
             <dl>
               <dt>Event</dt>
-              <dd>- <a href="{{summary['event']['id']}}">{{summary['event']['event_name']}}</a></dd>
+              <dd>- <a href="{{summary['event']['event_oc_id']}}">{{summary['event']['event_name']}}</a></dd>
               <dt>Venue</dt>
-              <dd>- <a href="{{summary['venue']['id']}}">{{summary['venue']['venue_name']}}</a></dd>
+              <dd>- <a href="{{summary['venue']['venue_id']}}">{{summary['venue']['venue_name']}}</a></dd>
               <dt>Date</dt>
-              <dd>- {{summary['event_occ_date']}}</dd>
+              <dd>- {{summary['event']['event_occ_date']}}</dd>
             </dl>
           </td>
           <td>
@@ -46,7 +46,7 @@
           <td>
             <ul>
               {% for song in summary['songs'] %}
-              <li><a href="{{song['id']}}">{{song['song']}}</a></li>
+              <li><a href="{{song['song_id']}}">{{song['song']}}</a></li>
               {% endfor %}
             </ul>
           </td>
