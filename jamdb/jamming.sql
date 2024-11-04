@@ -231,44 +231,9 @@ CREATE TABLE SongPerform (
 	id	TEXT	NOT NULL,
 	event_occ_id	TEXT	NOT NULL,
 	song_id	TEXT	NOT NULL,
-	instrument_id	TEXT,
 	key_id	TEXT,
-	video	TEXT	DEFAULT "",
-	other_player_01	TEXT,
-	other_player_02	TEXT,
-	other_player_03	TEXT,
-	other_player_04	TEXT,
-	other_player_05	TEXT,
-	other_player_06	TEXT,
-	other_player_07	TEXT,
-	other_player_08	TEXT,
-	other_player_09	TEXT,
-	other_player_10	TEXT,
-	other_player_11	TEXT,
-	other_player_12	TEXT,
-	other_player_13	TEXT,
-	other_player_14	TEXT,
-	other_player_15	TEXT,
-	other_player_16	TEXT,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (event_occ_id) REFERENCES EventOcc (id),
-	FOREIGN KEY (other_player_01) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_02) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_03) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_04) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_05) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_06) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_07) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_08) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_09) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_10) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_11) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_12) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_13) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_14) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_15) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_16) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (instrument_id) REFERENCES Instrument (id),
 	FOREIGN KEY (song_id) REFERENCES Song (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
@@ -311,7 +276,7 @@ CREATE VIEW KeyView AS
 CREATE VIEW EventGenView AS
     SELECT 
         e.id as event_gen_id,
-        e.genre_id,
+        e.genre_id as event_genre_id,
         e.venue_id,
         e.host_id,
         e.date as event_gen_date,
@@ -323,7 +288,7 @@ CREATE VIEW EventGenView AS
         v.zip as venue_zip,
         v.state as venue_state,
         v.web as venue_web,
-        g.genre,
+        g.genre as event_genre,
         p.public_name as host_public_name,
         p.full_name as host_full_name
     FROM EventGen as e
@@ -370,82 +335,63 @@ CREATE VIEW SongView AS
     LEFT JOIN SubgenreView as sg
         ON s.subgenre_id = sg.subgenre_id;
 
+CREATE VIEW SongPerformerView AS
+    SELECT
+        sp.id as song_performer_id,
+        sp.song_perform_id,    
+        pi.id as person_instrument_id,
+        pi.person_id,
+        pi.instrument_id,
+        s.song_id,
+        s.event_occ_id
+    FROM SongPerformer as sp
+    INNER JOIN PersonInstrument as pi
+        ON pi.id = sp.person_instrument_id
+    INNER JOIN SongPerform as s
+        ON s.id = sp.song_perform_id;
 
-/***** Create Foreign Keys Constraints **************************/
 
-CREATE INDEX IFK__schema_columnstable_name ON _schema_tables (table_name);
+CREATE VIEW SongPerformView AS
+    SELECT 
+        sp.id as song_perform_id,
+        b.i_played,
+        b.num_players,
+        v.num_videos IS NOT NULL as has_video,
+        e.*,
+        s.*,
+        k.key_id as performed_key_id,
+        k.mode_id as performed_mode_id,
+        k.root as performed_root,
+        k.mode as performed_mode,
+        k.key as performed_key
+    FROM SongPerform as sp
+    LEFT JOIN (
+        SELECT
+            p.song_perform_id, SUM(a.me) > 0 as i_played, COUNT(p.id) as num_players
+        FROM SongPerformer as p
+        INNER JOIN (
+            SELECT
+                id, person_id = "paul_k" as me
+            FROM PersonInstrument
+            ) as a
+            ON p.person_instrument_id = a.id 
+        GROUP BY p.song_perform_id
+    ) as b
+        ON b.song_perform_id = sp.id
+    LEFT JOIN (
+        SELECT
+            song_perform_id, count(id) as num_videos
+        FROM PerformanceVideo
+        GROUP BY song_perform_id
+    ) as v
+        ON v.song_perform_id = sp.id
+    INNER JOIN EventOccView as e
+        ON e.event_occ_id = sp.event_occ_id
+    INNER JOIN SongView as s
+        ON s.song_id = sp.song_id
+    INNER JOIN KeyView as k
+        ON k.key_id = sp.key_id;
 
-CREATE INDEX IFK_EventGenvenue_id ON Venue (id);
-
-CREATE INDEX IFK_EventGenhost_id ON Person (id);
-
-CREATE INDEX IFK_EventGen_genre_id ON Genre (id);
-
-CREATE INDEX IFK_EventOccevent_gen_id ON EventGen (id);
-
-CREATE INDEX IFK_Keymode_id ON Mode (id);
-
-CREATE INDEX IFK_PersonInstrumentperson_id ON Person (id);
-
-CREATE INDEX IFK_PersonInstrumentinstrument_id ON Instrument (id);
-
-CREATE INDEX IFK_SetlistSongssetlist_id ON Setlist (id);
-
-CREATE INDEX IFK_SetlistSongsinstrument_id ON Instrument (id);
-
-CREATE INDEX IFK_SetlistSongssong_id ON Song (id);
-
-CREATE INDEX IFK_SetlistSongskey_id ON Key (id);
-
-CREATE INDEX IFK_Songsubgenre_id ON SubGenre (id);
-
-CREATE INDEX IFK_Songkey_id ON Key (id);
-
-CREATE INDEX IFK_Songcomposer_id ON Composer (id);
-
-CREATE INDEX IFK_SongLearnkey_id ON Key (id);
-
-CREATE INDEX IFK_SongPerformevent_occ_id ON EventOcc (id);
-
-CREATE INDEX IFK_SongPerformother_player_01 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_02 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_03 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_04 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_05 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_06 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_07 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_08 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_09 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_10 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_11 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_12 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_13 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_14 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_15 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_16 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerforminstrument_id ON Instrument (id);
-
-CREATE INDEX IFK_SongPerformsong_id ON Song (id);
-
-CREATE INDEX IFK_SongPerformkey_id ON Key (id);
-
-CREATE INDEX IFK_SubGenregenre_id ON Genre (id);
 
 /*** Populate Schema Tables *******************/
 
@@ -542,25 +488,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("SongPerform", "id", "Unique ID of a SongPerform."),
 	("SongPerform", "event_occ_id", "ID of the performed song's EventOcc."),
 	("SongPerform", "song_id", "ID of the performed song's Song."),
-	("SongPerform", "instrument_id", "ID of which Instrument I played.  If NULL, then I did not play on this performance."),
 	("SongPerform", "key_id", "ID of the performed song's key.  This is provided to override if a particular performance is in different than the Song's default key."),
-	("SongPerform", "video", "Link(s) to recordings of the performance."),
-	("SongPerform", "other_player_01", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_02", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_03", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_04", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_05", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_06", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_07", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_08", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_09", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_10", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_11", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_12", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_13", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_14", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_15", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_16", "ID of PersonInstrument for another player who played this song."),
 	("SongPerformer", "id", "Unique ID of the SongPerformer."),
 	("SongPerformer", "song_perform_id", "ID of the SongPerformed by the SongPerformer."),
 	("SongPerformer", "person_instrument_id", "ID of the PersonInstrument of the SongPerformer."),

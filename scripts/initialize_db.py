@@ -56,9 +56,9 @@ def insert_for_song_performance(db_handler, song_perform):
                     }
                 )
 
-    insert_to_table(db_handler, song_perform, "SongPerform")
-    # song_perform["i_played"] = song_perform["instrument_id"].apply(lambda x: x is not None)
-    # song_perform[["id", "event_occ_id", "song_id", "i_played", "key_id"]]                
+    song_perform["i_played"] = song_perform["instrument_id"].apply(lambda x: x is not None)
+    song_perform = song_perform[["id", "event_occ_id", "song_id", "i_played", "key_id"]]
+    insert_to_table(db_handler, song_perform, "SongPerform")    
     
     players = pd.DataFrame(players).reset_index().rename(columns={"index": "id"})
     insert_to_table(db_handler, players, "SongPerformer")
