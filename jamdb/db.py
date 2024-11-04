@@ -573,3 +573,6 @@ class BackendSQLite(Backend):
         failed_constraints = sorted(failed_constraints, key=sort_by_left_table)
 
         return failed_constraints
+
+    def get_person_dir(self, person_id):
+        return self.data_dir / "people" / person_id        

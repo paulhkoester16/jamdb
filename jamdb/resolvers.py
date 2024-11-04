@@ -243,6 +243,13 @@ class Resolver:
         try:
             return self.__simplified_persons_df
         except AttributeError:
+            def get_pics_for_person_id(person_id):
+                return [
+                    img_link
+                    for img_link in list(self.db_handler.get_person_dir(person_id).glob("*"))
+                    if img_link.suffix in [".jpeg", ".png"]
+                ]
+
             contacts_dict = (
                 self.db_handler.query("SELECT * FROM Contact")
                 .set_index("id")        # to pop off the contact id before indexing with person
@@ -256,9 +263,11 @@ class Resolver:
                 .rename(columns={"id": "person_id"})
             )
             output["contacts"] =  output["person_id"].apply(lambda x: contacts_dict.get(x, []))
-            output.index = list(output["person_id"])
-            self.__simplified_persons_df = output
+
+            output["pictures"] = output["person_id"].apply(get_pics_for_person_id)
             
+            output.index = list(output["person_id"])
+            self.__simplified_persons_df = output            
             return self.__simplified_persons_df
 
     def get_simplified_subgenre_df(self):
@@ -514,8 +523,8 @@ class Resolver:
         
         def players_dicts(players):
             return (
-                self.get_simplified_persons_df().loc[players][["public_name", "full_name"]]
-                .reset_index().to_dict(orient="records")
+                self.get_simplified_persons_df().loc[players]
+                [["person_id", "public_name", "full_name"]].to_dict(orient="records")
             )
         
         songs_at_event = self._song_perform_df[["event_occ_id", "song_id", "players"]].copy()

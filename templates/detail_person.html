@@ -13,22 +13,27 @@
 
 <body>
   <div class="page-header">
-    <h1>Detail View of {{person["public_name"]}}</h1>
   </div>
   <div class="container">
-    <dl>
-    <dt>Full name</dt>
-    <dd>- {{person["full_name"]}}</dd>        
-    <dt>Public name</dt>
-    <dd>- {{person["public_name"]}}</dd>
-    {% for contact_type, contact_links in person["contacts"].items() %}
-      <dt>{{ contact_type }}<dt>
-      {% for contact_link in contact_links %}
-        <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
+    <div class="col-lg-6">
+      <dl>
+        <dt>Full name</dt>
+        <dd>- {{ person["full_name"] }}</dd>        
+        <dt>Public name</dt>
+        <dd>- {{ person["public_name"] }}</dd>
+        {% for contact_type, contact_links in person["contacts"].items() %}
+          <dt>{{ contact_type }}<dt>
+          {% for contact_link in contact_links %}
+            <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
+          {% endfor %}
+        {% endfor %}
+      </dl>
+    </div>
+    <div class="col-lg-6">
+      {% for img_link in person["pictures"] %}
+        <img src="{{ img_link }}" class="img-fluid" alt="Pic of {{person['public_name']}}">
       {% endfor %}
-    {% endfor %}
-
-    </dl>
+    </div>
   </div>
 <script>
 

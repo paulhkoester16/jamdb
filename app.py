@@ -146,8 +146,8 @@ def overview_event_occs():
 def detail_person(person_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
-    person = resolver._person_mapping().loc[person_id].to_dict()
-
+    person = resolver.get_simplified_persons_df().loc[person_id].to_dict()
+    
     contacts = defaultdict(list)
     orig_contacts = person.pop("contacts", [])
     for contact in orig_contacts:
@@ -156,6 +156,8 @@ def detail_person(person_id):
         contacts[contact["contact_type"]].append(contact["link"])
     person["contacts"] = contacts
 
+    person["pictures"] = [str(pic_path.absolute()) for pic_path in person["pictures"]]
+    
     return render_template("detail_person.html", person=person)
 
 # @app.route("/detail-venue/", methods=["GET", "POST"])

@@ -36,7 +36,7 @@
             <ul>
               {% for person in summary['players'] %}
               <li>
-                <a href="{{ url_for('detail_person', person_id=person['id']) }}">
+                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
                   {{person['public_name']}}
                 </a>
               </li>
