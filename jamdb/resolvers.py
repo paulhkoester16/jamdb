@@ -62,11 +62,11 @@ class Resolver:
                     if img_link.suffix in [".jpeg", ".png"]
                 ]
 
-            contacts_lookup_df = _group_lists(
-                self.db_handler.query("SELECT * FROM ContactView").drop(columns=["contact_id"]),
-                "person_id"
-            ).apply(lambda x: x.to_dict(), axis=1)
-
+            contacts_lookup_df = (
+                self.db_handler.query("SELECT * FROM ContactView").set_index("person_id")
+                .drop(columns=["contact_id"]).apply(lambda x: x.to_dict(), axis=1)
+            )
+            
             insts_dict = (
                 self.db_handler.query("SELECT * FROM PersonInstrumentView")
                 .set_index("person_id")["instrument"].apply(lambda x: [x])
@@ -78,14 +78,15 @@ class Resolver:
                 "song_id"
             ).apply(lambda x: x.to_dict(), axis=1)
 
-            event_occ_lookup_df = _group_lists(
-                self.db_handler.query("SELECT * FROM EventOccView")[["event_occ_id", "event_occ"]],
-                "event_occ_id"
-            ).apply(lambda x: x.to_dict(), axis=1)
+            event_occ_lookup_df = (
+                self.db_handler.query("SELECT event_occ_id as idx, * FROM EventOccView")
+                .set_index("idx")[["event_occ_id", "event_occ", "event_occ_date"]]
+                .apply(lambda x: x.to_dict(), axis=1)
+            )
 
             song_perform_lookup_df = (
                 self.db_handler.query("SELECT song_perform_id as idx, * FROM SongPerformView")
-                .set_index("idx")[["song_perform_id", "song", "event_occ"]]
+                .set_index("idx")[["song_perform_id", "event_occ_id", "song", "event_occ", "event_occ_date"]]
                 .apply(lambda x: x.to_dict(), axis=1)
             )
             
