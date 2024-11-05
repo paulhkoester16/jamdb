@@ -257,7 +257,32 @@ CREATE TABLE PerformanceVideo (
 	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id)
 );
 
-/***** Create Views *********************************************/
+/***** Create Views ************************************************
+As general philosopy, use TABLES for writing and storing data and
+use VIEWS for reading data.
+
+Some VIEWS appear pointless, just SELECT * from associated table.
+But this gives flexibility -- we may later decide parent table
+needs to be further factored into more normalized components.
+As long as downstream code only consumes from VIEWS, then downstream
+won't need to change.
+********************************************************************/
+
+CREATE VIEW RefRecsView AS
+    SELECT rr.id as ref_ref_id, rr.song_id, rr.source, rr.link
+    FROM RefRecs as rr;
+
+CREATE VIEW ChartsView AS
+    SELECT c.id as chart_id, c.song_id, c.source, c.link
+    FROM Charts as c;
+
+CREATE VIEW ContactView AS
+    SELECT c.id as contact_id, c.person_id, c.contact_type, c.contact_info, c.link
+    FROM Contact as c;
+
+CREATE VIEW PersonView AS
+    SELECT p.id as person_id, p.public_name, p.full_name
+    FROM Person as p;
 
 CREATE VIEW SubgenreView AS
     SELECT
@@ -313,8 +338,10 @@ CREATE VIEW PersonInstrumentView AS
     SELECT
         a.id as person_instrument_id,
         a.instrument_id,
+        a.person_id,
         i.instrument,
-        p.*
+        p.full_name,
+        p.public_name
     FROM PersonInstrument as a
     INNER JOIN Person as p
         ON a.person_id = p.id
@@ -349,7 +376,6 @@ CREATE VIEW SongPerformerView AS
         ON pi.id = sp.person_instrument_id
     INNER JOIN SongPerform as s
         ON s.id = sp.song_perform_id;
-
 
 CREATE VIEW SongPerformView AS
     SELECT 
@@ -389,7 +415,7 @@ CREATE VIEW SongPerformView AS
         ON e.event_occ_id = sp.event_occ_id
     INNER JOIN SongView as s
         ON s.song_id = sp.song_id
-    INNER JOIN KeyView as k
+    LEFT JOIN KeyView as k
         ON k.key_id = sp.key_id;
 
 
