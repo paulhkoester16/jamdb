@@ -18,9 +18,31 @@ import pandas as pd
 import copy
 import json
 
-def fill_na_to_list(df, col, tmp_fill=""):
+def _fill_na_to_list(df, col, tmp_fill=""):
     df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
 
+def _group_lists(df, group_by_col, dedup=True):
+    dg = df.copy()
+    
+    new_cols = [f"{col}s" for col in df.columns if col != group_by_col]
+    for col in new_cols:
+        dg[col] = dg[col[:-1]].apply(lambda x: [x])
+    dg = dg.groupby(group_by_col)[new_cols].sum().reset_index()
+    if dedup:
+        for col in new_cols:
+            dg[col] = dg[col].apply(lambda x: sorted(list(set(x))))
+
+    dg.index = list(dg[group_by_col])
+    return dg
+
+def _apply_lookup_on_lists_col(df, lookup_df, col):
+    def intersection(x):
+        if not isinstance(x, (list, set)):
+            x = [x]
+        return lookup_df.index.intersection(x)
+
+    result = df[col].apply(lambda x: list(lookup_df.loc[intersection(x)]))
+    return result
 
 class Resolver:
     # TODO -- How much of these should be defined as VIEWS in the DB?
@@ -32,6 +54,7 @@ class Resolver:
         try:
             return self.__denormalized_persons_df
         except AttributeError:
+
             def get_pics_for_person_id(person_id):
                 return [
                     img_link
@@ -39,21 +62,78 @@ class Resolver:
                     if img_link.suffix in [".jpeg", ".png"]
                 ]
 
-            contacts_dict = (
-                self.db_handler.query("SELECT * FROM Contact")
-                .set_index("id")        # to pop off the contact id before indexing with person
-                .set_index("person_id")
-                .apply(lambda x: [x.to_dict()], axis=1)
+            contacts_lookup_df = _group_lists(
+                self.db_handler.query("SELECT * FROM ContactView").drop(columns=["contact_id"]),
+                "person_id"
+            ).apply(lambda x: x.to_dict(), axis=1)
+
+            insts_dict = (
+                self.db_handler.query("SELECT * FROM PersonInstrumentView")
+                .set_index("person_id")["instrument"].apply(lambda x: [x])
                 .groupby("person_id").sum().to_dict()
             )
 
-            output = (
-                self.db_handler.query("SELECT * FROM Person")
-                .rename(columns={"id": "person_id"})
-            )
-            output["contacts"] =  output["person_id"].apply(lambda x: contacts_dict.get(x, []))
+            songs_lookup_df = _group_lists(
+                self.db_handler.query("SELECT * FROM SongView")[["song_id", "song"]],
+                "song_id"
+            ).apply(lambda x: x.to_dict(), axis=1)
 
+            event_occ_lookup_df = _group_lists(
+                self.db_handler.query("SELECT * FROM EventOccView")[["event_occ_id", "event_occ"]],
+                "event_occ_id"
+            ).apply(lambda x: x.to_dict(), axis=1)
+
+            song_perform_lookup_df = (
+                self.db_handler.query("SELECT song_perform_id as idx, * FROM SongPerformView")
+                .set_index("idx")[["song_perform_id", "song", "event_occ"]]
+                .apply(lambda x: x.to_dict(), axis=1)
+            )
+            
+            spv = _group_lists(
+                (
+                    self.db_handler.query("SELECT * FROM SongPerformerView")
+                    [["person_id", "song_id", "event_occ_id", "song_perform_id"]]
+                ),
+                "person_id"
+            )
+
+            my_song_perform_ids = set(spv.loc[self.db_handler.me]["song_perform_ids"])
+            spv["with_me_song_perform_ids"] = (
+                spv["song_perform_ids"].apply(
+                    lambda x: sorted(list(my_song_perform_ids.intersection(x)))
+                )
+            )
+
+            output = (
+                self.db_handler.query("SELECT * FROM PersonView")
+                .rename(columns={"id": "person_id"})
+            ).merge(
+                spv, on="person_id", how="left"
+            )
+
+            for col in spv.columns:
+                if col == "person_id":
+                    continue
+                _fill_na_to_list(output, col, tmp_fill="")
+
+            output["contacts"] = _apply_lookup_on_lists_col(output, contacts_lookup_df, "person_id")
+
+            output["instruments"] = output["person_id"].apply(
+                lambda x: insts_dict.get(x, [])
+            )
             output["pictures"] = output["person_id"].apply(get_pics_for_person_id)
+            output["songs"] = _apply_lookup_on_lists_col(
+                output, songs_lookup_df, "song_ids"
+            )
+            output["event_occs"] = _apply_lookup_on_lists_col(
+                output, event_occ_lookup_df, "event_occ_ids"
+            )
+            output["songs_perform"] = _apply_lookup_on_lists_col(
+                output, song_perform_lookup_df, "song_perform_ids"
+            )
+            output["songs_performed_with_me"] = _apply_lookup_on_lists_col(
+                output, song_perform_lookup_df, "with_me_song_perform_ids"
+            )
             
             output.index = list(output["person_id"])
             self.__denormalized_persons_df = output            
@@ -79,9 +159,14 @@ class Resolver:
             output = (
                 self.db_handler.query("SELECT * FROM SongPerformView").merge(
                     agg_performer,
-                    on="song_perform_id"
+                    on="song_perform_id",
+                    how="left"
                 )
             )
+            for col in agg_performer.columns:
+                if col == "song_perform_id":
+                    continue
+                _fill_na_to_list(output, col, tmp_fill="")
             
             self.__denormalized_song_perform_df = output
             return self.__denormalized_song_perform_df
@@ -91,12 +176,12 @@ class Resolver:
             return self.__denormalized_songs_df
         except AttributeError:
             ref_recs_dict = (
-                self.db_handler.query("SELECT * FROM RefRecs").set_index("song_id")
+                self.db_handler.query("SELECT * FROM RefRecsView").set_index("song_id")
                 .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
                 .groupby("song_id").sum().to_dict()
             )
             charts_dict = (
-                self.db_handler.query("SELECT * FROM Charts").set_index("song_id")
+                self.db_handler.query("SELECT * FROM ChartsView").set_index("song_id")
                 .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
                 .groupby("song_id").sum().to_dict()
             )
@@ -132,7 +217,7 @@ class Resolver:
                 )
             )
             for col in kept_cols:
-                fill_na_to_list(event_occ, col, tmp_fill="")            
+                _fill_na_to_list(event_occ, col, tmp_fill="")            
 
             self.__denormalized_event_occ_df = event_occ
             return self.__denormalized_event_occ_df
