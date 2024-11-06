@@ -287,7 +287,18 @@ CREATE VIEW PersonView AS
 CREATE VIEW InstrumentView AS
     SELECT i.id as instrument_id, i.instrument
     FROM Instrument as i;
-    
+
+CREATE VIEW VenueView AS
+    SELECT
+        v.id as venue_id,
+    	v.venue,
+    	v.address,
+    	v.city,
+    	v.zip,
+    	v.state,
+    	v.web
+    FROM Venue as v;
+
 CREATE VIEW SubgenreView AS
     SELECT
         s.id as subgenre_id, s.genre_id, s.subgenre, g.genre
