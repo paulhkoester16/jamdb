@@ -1,3 +1,4 @@
+{% set public_name = person["public_name"] %}
 <!doctype html> 
 <html lang="en"> 
   
@@ -13,26 +14,79 @@
 
 <body>
   <div class="page-header">
+      <h1>Player  {{ person["public_name"] }}</h1>
   </div>
   <div class="container">
-    <div class="col-lg-6">
-      <dl>
-        <dt>Full name</dt>
-        <dd>- {{ person["full_name"] }}</dd>        
-        <dt>Public name</dt>
-        <dd>- {{ person["public_name"] }}</dd>
-        {% for contact_type, contact_links in person["contacts"].items() %}
-          <dt>{{ contact_type }}<dt>
-          {% for contact_link in contact_links %}
-            <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
+    <div class="row">  
+      <div class="col-lg-6">
+        <dl>
+          <dt>Full name</dt>
+          <dd>- {{ person["full_name"] }}</dd>        
+          <dt>Public name</dt>
+          <dd>- {{ public_name }}</dd>
+          {% for contact_type, contact_links in person["contacts"].items() %}
+            <dt>{{ contact_type }}<dt>
+            {% for contact_link in contact_links %}
+              <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
+            {% endfor %}
           {% endfor %}
+          <dt>Instruments played</dt>
+            {% for inst in person["instruments"] %}
+              <dd>- {{ inst }}<dd>
+            {% endfor %}
+        </dl>
+      </div>
+      <div class="col-lg-6">
+        {% for img_link in person["pictures"] %}
+          <img src="{{ img_link }}" class="img-fluid" alt="Pic of {{ public_name }}">
         {% endfor %}
-      </dl>
+        
+        <h3>Events I've seen {{ public_name }} at:</h3>
+        <ul>
+          {% for event in person["event_occs"] %}
+            <li>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}">
+                {{ event["event_occ"] }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
-    <div class="col-lg-6">
-      {% for img_link in person["pictures"] %}
-        <img src="{{ img_link }}" class="img-fluid" alt="Pic of {{person['public_name']}}">
-      {% endfor %}
+      
+    <div class="row">
+      <div class="col-lg-6">
+        <h3>Songs I've played with {{ public_name }}: </h3>
+        <dl>
+          {% for event_id, songs in person["songs_performed_with_me"] %}
+            <dt> <a href="{{ url_for('detail_event_occ', event_occ_id=event_id) }}">{{ songs[0]["event_occ"] }}</a></dt>
+            {% for song in songs %}
+              <dd>
+                -  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                  {{ song["song"] }}
+                </a>                  
+              </dd>
+            {% endfor %}
+          {% endfor %}
+        </dl>
+      </div>
+
+      <div class="col-lg-6">
+        <h3>Other songs I've seen {{ public_name }} play:</h3>
+        <dl>
+          {% for event_id, songs in person["songs_performed_without_me"] %}
+            <dt> <a href="{{ url_for('detail_event_occ', event_occ_id=event_id) }}">{{ songs[0]["event_occ"] }}</a></dt>
+            {% for song in songs %}
+              <dd>
+                -  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                  {{ song["song"] }}
+                </a>                  
+              </dd>
+            {% endfor %}
+          {% endfor %}
+        </dl>
+      </div>
+    </div>        
     </div>
   </div>
 <script>

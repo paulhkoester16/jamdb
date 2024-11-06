@@ -1,0 +1,78 @@
+{% set event_occ = event["event_occ"] %}
+<!doctype html> 
+<html lang="en"> 
+  
+<head>
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <title>Detail View of Event</title> 
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+  <div class="page-header">
+      <h1>Event {{ event_occ }}</h1>
+  </div>
+  <div class="container">
+    <div class="row">  
+      <div class="col-lg-6">
+        <dl>
+          <dt>Event</dt>
+          <dd>- {{ event_occ }}</dd>            
+          <dt>Date</dt>
+          <dd>- {{ event["event_occ_date"] }}</dd>
+          <dt>Event Series</dt>
+          <dd>- <a href="{{ url_for('detail_event_gen', event_gen_id=event['event_gen_id']) }}">{{ event["event_gen"] }} </a></dd>
+          <dt>Venue</dt>
+          <dd>-  <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}">{{ event["venue_name"] }}</a></dd>
+        </dl>
+
+      <h3>Songs performed</h3>
+        <ul>
+          {% for song in event["songs"] %}
+            <li>
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                {{ song["song"] }}
+             </a>
+             </li>
+          {% endfor %}
+        </ul>
+
+          
+      </div>
+      <div class="col-lg-6">       
+        <h3>Attendees</h3>
+        <dl>
+          {% for person in event["players"] %}
+            <dt>
+              <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
+                {{ person["public_name"] }}
+              </a>
+            </dt>
+            {% for inst in person["instruments"] %}
+              <dd> - {{ inst }}</dd>
+            {% endfor %}
+          {% endfor %}
+        </dl>
+      </div>
+    </div>
+
+    </div>
+  </div>
+<script>
+
+$(document).ready(function(){
+  $("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#myTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+});
+</script>
+    
+</body>
+</html>

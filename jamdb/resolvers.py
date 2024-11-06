@@ -21,19 +21,34 @@ import json
 def _fill_na_to_list(df, col, tmp_fill=""):
     df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
 
-def _group_lists(df, group_by_col, dedup=True):
+def _group_lists(df, group_by_cols, dedup=True):
     dg = df.copy()
+    if isinstance(group_by_cols, (tuple, list)):
+        if len(group_by_cols) == 1:
+            composite_key = False
+        else:
+            composite_key = True
+    else:
+        composite_key = False
+        group_by_cols = [group_by_cols]
+        
     
-    new_cols = [f"{col}s" for col in df.columns if col != group_by_col]
+    new_cols = [f"{col}s" for col in df.columns if col not in group_by_cols]
     for col in new_cols:
         dg[col] = dg[col[:-1]].apply(lambda x: [x])
-    dg = dg.groupby(group_by_col)[new_cols].sum().reset_index()
+
+    dg = dg.groupby(group_by_cols)[new_cols].sum().reset_index()
     if dedup:
         for col in new_cols:
             dg[col] = dg[col].apply(lambda x: sorted(list(set(x))))
 
-    dg.index = list(dg[group_by_col])
+    if composite_key:
+        dg.index = dg[group_by_cols]
+    else:
+        group_by_cols = group_by_cols[0]
+        dg.index = list(dg[group_by_cols])
     return dg
+
 
 def _apply_lookup_on_lists_col(df, lookup_df, col):
     def intersection(x):
@@ -200,46 +215,77 @@ class Resolver:
         try:
             return self.__denormalized_event_occ_df
         except AttributeError:
-            song_perform = self.get_denormalized_song_perform_df().copy()
-            song_perform["song_ids"] = song_perform["song_id"].apply(lambda x: [x])
-            kept_cols = ["song_ids", "person_instrument_ids", "person_ids", "instrument_ids"]
-            agg_song_perform = (
-                song_perform.groupby("event_occ_id")[kept_cols].sum()
+
+            sp = self.db_handler.query(
+                f"""
+                SELECT
+                    sp.event_occ_id,
+                    sp.person_id,
+                    sp.song_id,
+                    sp.song_perform_id,
+                    p.public_name,
+                    p.full_name,
+                    i.instrument,
+                    s.song
+                FROM
+                    SongPerformerView as sp
+                INNER JOIN InstrumentView as i
+                   ON sp.instrument_id = i.instrument_id
+                INNER JOIN PersonView as p
+                   ON sp.person_id = p.person_id
+                INNER JOIN SongView as s
+                   ON sp.song_id = s.song_id
+                ;
+                """
             )
-            for col in kept_cols:
-                agg_song_perform[col] = agg_song_perform[col].apply(lambda x: sorted(list(set(x))))
-            agg_song_perform.reset_index(inplace=True)
             
-            event_occ = (
+            players_lookup_df =  _group_lists(
+                (
+                    _group_lists(
+                        sp[["event_occ_id", "person_id", "public_name", "full_name", "instrument"]],
+                        ["event_occ_id", "person_id", "public_name", "full_name"]
+                    ).set_index("event_occ_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={0: "player"})
+                ),
+                "event_occ_id",
+                dedup=False
+            )
+            songs_lookup_df = _group_lists(
+                (
+                    sp[["event_occ_id", "song_perform_id", "song_id", "song"]]
+                    .drop_duplicates()
+                    .set_index("event_occ_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={0: "song"})
+                ),
+                ["event_occ_id"],
+                dedup=False
+            )
+            
+            output = (
                 self.db_handler.query("SELECT * FROM EventOccView").merge(
-                    agg_song_perform,
+                    songs_lookup_df,
                     how="left",
                     on="event_occ_id"
+                ).merge(
+                    players_lookup_df,
+                    on="event_occ_id",
+                    how="left"
                 )
             )
-            for col in kept_cols:
-                _fill_na_to_list(event_occ, col, tmp_fill="")            
+            
+            for col in ["songs", "players"]:
+                _fill_na_to_list(output, col, tmp_fill="")
 
-            self.__denormalized_event_occ_df = event_occ
+            output.index = list(output["event_occ_id"])
+            self.__denormalized_event_occ_df = output
             return self.__denormalized_event_occ_df
 
     def overview_event_occs(self):
-        def songs_dicts(songs):
-            return (
-                self.get_denormalized_songs_df().loc[songs]
-                [["song_id", "song"]].to_dict(orient="records")
-            )
-        
-        def players_dicts(players):
-            return (
-                self.get_denormalized_persons_df().loc[players]
-                [["person_id", "public_name", "full_name"]].to_dict(orient="records")
-            )
-        
         simp_event_occ = self.get_denormalized_event_occ_df().copy()
-        
-        simp_event_occ["players"] = simp_event_occ["person_ids"].apply(players_dicts)
-        simp_event_occ["songs"] = simp_event_occ["song_ids"].apply(songs_dicts)
         
         simp_event_occ["event"] = simp_event_occ.apply(
             lambda x: {
@@ -249,16 +295,24 @@ class Resolver:
             },
             axis=1
         )
-
-        simp_event_occ["venue"] = simp_event_occ.apply(
-            lambda x: {"venue_id": x["venue_id"], "venue_name": x["venue_name"]},
-            axis=1
+        
+        simp_event_occ["event"] = (
+            simp_event_occ[["event_occ_id", "event_occ", "event_occ_date"]]
+            .apply(lambda x: x.to_dict(), axis=1)
         )
-
+        
+        
+        simp_event_occ["venue"] = (
+            simp_event_occ[["venue_id", "venue_name"]]
+            .apply(lambda x: x.to_dict(), axis=1)
+        )
+        
+        
         simp_event_occ = (
             simp_event_occ.sort_values("event_occ_date")
             [["event", "venue", "players", "songs"]]
         )
+
         return simp_event_occ
 
     

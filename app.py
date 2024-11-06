@@ -123,17 +123,16 @@ def overview_event_occs():
 #     summaries = resolver.overview_people().to_dict(orient="records")
 #     return render_template("overview_people.html", summaries=summaries)
 
+@app.route("/detail-event-occ/<string:event_occ_id>")
+def detail_event_occ(event_occ_id):
+    db_handler = init_db_handler()
+    return render_template("detail_event_occ.html")
 
-# @app.route("/detail-event-occ/", methods=["GET", "POST"])
-# def detail_event_occ():
-#     db_handler = init_db_handler()
-#     return render_template("detail_event_occ.html")
 
-
-# @app.route("/detail-performed-song/", methods=["GET", "POST"])
-# def detail_performed_song():
-#     db_handler = init_db_handler()
-#     return render_template("detail_performed_song.html")
+@app.route("/detail-performed-song/<string:song_perform_id>")
+def detail_performed_song(song_perform_id):
+    db_handler = init_db_handler()
+    return render_template("detail_performed_song.html")
 
 
 # @app.route("/detail-song/", methods=["GET", "POST"])
@@ -157,6 +156,28 @@ def detail_person(person_id):
     person["contacts"] = contacts
 
     person["pictures"] = [str(pic_path.absolute()) for pic_path in person["pictures"]]
+
+    with_me_ids = {x["song_perform_id"] for x in person["songs_performed_with_me"]}
+    songs_perform = defaultdict(list)
+    orig_songs_perform = person.pop("songs_perform", [])
+    for sp in orig_songs_perform:
+        if sp["song_perform_id"] not in with_me_ids:
+            songs_perform[sp["event_occ_id"]].append(sp)
+    songs_perform = sorted(
+        [[k, v] for k, v in songs_perform.items()],
+        key=lambda x: x[1][0]["event_occ_id"]
+    )
+    person["songs_performed_without_me"] = songs_perform
+
+    songs_performed_with_me = defaultdict(list)
+    orig_songs_performed_with_me = person.pop("songs_performed_with_me", [])
+    for sp in orig_songs_performed_with_me:
+        songs_performed_with_me[sp["event_occ_id"]].append(sp)
+    songs_performed_with_me = sorted(
+        [[k, v] for k, v in songs_performed_with_me.items()],
+        key=lambda x: x[1][0]["event_occ_id"]
+    )        
+    person["songs_performed_with_me"] = songs_performed_with_me
     
     return render_template("detail_person.html", person=person)
 

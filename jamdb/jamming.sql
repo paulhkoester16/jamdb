@@ -284,6 +284,10 @@ CREATE VIEW PersonView AS
     SELECT p.id as person_id, p.public_name, p.full_name
     FROM Person as p;
 
+CREATE VIEW InstrumentView AS
+    SELECT i.id as instrument_id, i.instrument
+    FROM Instrument as i;
+    
 CREATE VIEW SubgenreView AS
     SELECT
         s.id as subgenre_id, s.genre_id, s.subgenre, g.genre
