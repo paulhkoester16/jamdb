@@ -17,6 +17,8 @@ from collections import defaultdict
 import pandas as pd
 import copy
 import json
+from .globals import _format_id_as_str
+
 
 def _fill_na_to_list(df, col, tmp_fill=""):
     df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
@@ -183,7 +185,8 @@ class Resolver:
                 if col == "song_perform_id":
                     continue
                 _fill_na_to_list(output, col, tmp_fill="")
-            
+
+            output.index = list(output["song_perform_id"])
             self.__denormalized_song_perform_df = output
             return self.__denormalized_song_perform_df
 
@@ -284,6 +287,33 @@ class Resolver:
             self.__denormalized_event_occ_df = output
             return self.__denormalized_event_occ_df
 
+    def get_denormalized_event_gen_df(self):
+        try:
+            return self.__denormalized_event_gen_df
+        except AttributeError:
+            output = self.db_handler.query("SELECT * FROM EventGenView")
+            output.index = list(output["event_gen_id"])
+            self.__denormalized_event_gen_df = output
+            return self.__denormalized_event_gen_df
+
+    def get_denormalized_venue_df(self):
+        try:
+            return self.__denormalized_venue_df
+        except AttributeError:
+            output = self.db_handler.query("SELECT * FROM VenueView")
+            output["zip"] = output["zip"].apply(_format_id_as_str)
+            output["address_string"] = output.apply(
+                lambda x: f"{x['address']}, {x['city']}, {x['state']}, {x['zip']}",
+                axis=1
+            )        
+            output["google_map_string"] = output["address_string"].apply(
+                lambda x: f"https://www.google.com/maps/place/{x}".replace(" ", "+")
+            )
+
+            output.index = list(output["venue_id"])
+            self.__denormalized_venue_df = output
+            return self.__denormalized_venue_df
+    
     def overview_event_occs(self):
         simp_event_occ = self.get_denormalized_event_occ_df().copy()
         

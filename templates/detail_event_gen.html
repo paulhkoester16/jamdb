@@ -1,0 +1,54 @@
+{% set event_gen = event["event_gen"] %}
+<!doctype html> 
+<html lang="en"> 
+  
+<head>
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <title>Detail View of Event Series</title> 
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+  <div class="page-header">
+      <h1 class="text-center py-5"> {{ event_gen }}</h1>
+  </div>
+
+  <div class="container">
+    <div class="row">  
+      <div class="col-lg-6">
+        <dl>
+          <dt>Event Series</dt>
+          <dd>- {{ event_gen }}</dd>
+          <dt>Genre</dt>
+            <dd>- {{ event["event_genre"] }} </dd>
+          <dt>When</dt>
+          <dd>- {{ event["event_gen_date"] }} </dd>
+          <dd>- {{ event["event_gen_time"] }} </dd>
+          <dt>Venue</dt>
+          <dd>-  <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}">{{ event["venue_name"] }}</a></dd>
+          {% if event["host_id"] != "unknown_host" %}
+            <dd>Host</dd>
+            <dt>- <a href="{{ url_for('detail_person', person_id=event['host_id']) }}">{{ event["host_public_name"] }} </a> </dt>
+          {% endif %}
+        </dl>
+          <h1> More to come -- want to get list of all occurences </h1>
+    </div>
+  </div>
+<script>
+
+$(document).ready(function(){
+  $("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#myTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+});
+</script>
+    
+</body>
+</html>

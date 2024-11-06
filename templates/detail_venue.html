@@ -1,0 +1,47 @@
+{% set venue_name = venue["venue"] %}
+<!doctype html> 
+<html lang="en"> 
+  
+<head>
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <title>Detail View of Venue</title> 
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+  <div class="page-header">
+      <h1 class="text-center py-5"> {{ venue_name }}</h1>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6">
+        <a href="{{ venue['google_map_string'] }}"> {{ venue["address_string"] }}</a>
+
+       <h1> More to come -- want to get list of Events </h1>
+      </div>
+      <div class="col-lg-6">
+        <a href="{{ venue['web'] }}">{{ venue['web'] }}</a>          
+        <div class="embed-responsive embed-responsive-16by9">
+          <iframe class="embed-responsive-item" src="{{ venue['web'] }}" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+
+$(document).ready(function(){
+  $("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#myTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+});
+</script>
+    
+</body>
+</html>

@@ -133,12 +133,16 @@ def detail_event_occ(event_occ_id):
 @app.route("/detail-event-gen/<string:event_gen_id>")
 def detail_event_gen(event_gen_id):
     db_handler = init_db_handler()
-    return render_template("detail_event_gen.html")
+    resolver = Resolver(db_handler)
+    event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
+    return render_template("detail_event_gen.html", event=event)
 
 @app.route("/detail-performed-song/<string:song_perform_id>")
 def detail_performed_song(song_perform_id):
     db_handler = init_db_handler()
-    return render_template("detail_performed_song.html")
+    resolver = Resolver(db_handler)
+    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()    
+    return render_template("detail_performed_song.html", song=song)
 
 
 # @app.route("/detail-song/", methods=["GET", "POST"])
@@ -190,7 +194,10 @@ def detail_person(person_id):
 @app.route("/detail-venue/<string:venue_id>")
 def detail_venue(venue_id):
     db_handler = init_db_handler()
-    return render_template("detail_venue.html")
+    resolver = Resolver(db_handler)
+    venue = resolver.get_denormalized_venue_df().loc[venue_id].to_dict()
+        
+    return render_template("detail_venue.html", venue=venue)
 
 
 if __name__ == '__main__':
