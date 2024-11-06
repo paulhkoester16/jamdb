@@ -34,7 +34,6 @@ def _group_lists(df, group_by_cols, dedup=True):
         composite_key = False
         group_by_cols = [group_by_cols]
         
-    
     new_cols = [f"{col}s" for col in df.columns if col not in group_by_cols]
     for col in new_cols:
         dg[col] = dg[col[:-1]].apply(lambda x: [x])
@@ -291,7 +290,27 @@ class Resolver:
         try:
             return self.__denormalized_event_gen_df
         except AttributeError:
-            output = self.db_handler.query("SELECT * FROM EventGenView")
+            event_occ_df = _group_lists(
+                (
+                    self.get_denormalized_event_occ_df()[["event_gen_id", "event_occ_id", "event_occ"]]
+                    .set_index("event_gen_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={"index": "event_gen_id", 0: "event_occ"})
+                ),
+                "event_gen_id",
+                dedup=False
+            )
+            
+            output = (
+                self.db_handler.query("SELECT * FROM EventGenView").merge(
+                    event_occ_df,
+                    on="event_gen_id",
+                    how="left"
+                )
+            )            
+            _fill_na_to_list(output, "event_occs", tmp_fill="")
+            
             output.index = list(output["event_gen_id"])
             self.__denormalized_event_gen_df = output
             return self.__denormalized_event_gen_df
@@ -300,6 +319,18 @@ class Resolver:
         try:
             return self.__denormalized_venue_df
         except AttributeError:
+            event_gen_df = _group_lists(
+                (
+                    self.get_denormalized_event_gen_df()[["venue_id", "event_gen_id", "event_gen"]]
+                    .set_index("venue_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={"index": "venue_id", 0: "event_gen"})
+                ),
+                "venue_id",
+                dedup=False
+            )
+
             output = self.db_handler.query("SELECT * FROM VenueView")
             output["zip"] = output["zip"].apply(_format_id_as_str)
             output["address_string"] = output.apply(
@@ -309,6 +340,13 @@ class Resolver:
             output["google_map_string"] = output["address_string"].apply(
                 lambda x: f"https://www.google.com/maps/place/{x}".replace(" ", "+")
             )
+
+            output = output.merge(
+                event_gen_df,
+                on="venue_id",
+                how="left"
+            )
+            _fill_na_to_list(output, "event_gens", tmp_fill="")            
 
             output.index = list(output["venue_id"])
             self.__denormalized_venue_df = output

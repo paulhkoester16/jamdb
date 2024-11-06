@@ -35,7 +35,19 @@
             <dt>- <a href="{{ url_for('detail_person', person_id=event['host_id']) }}">{{ event["host_public_name"] }} </a> </dt>
           {% endif %}
         </dl>
-          <h1> More to come -- want to get list of all occurences </h1>
+      </div>
+      <div class="col-lg-6">
+        Events in this series
+        <ul>
+            {% for occ in event["event_occs"] %}
+            <li>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=occ['event_occ_id']) }}">
+                {{ occ['event_occ'] }}
+              </a>
+            </li>
+            {% endfor %}
+        </ul>
+      </div>
     </div>
   </div>
 <script>
