@@ -54,29 +54,29 @@ def get_row():
     return render_template("get_row.html", form=form)
 
 
-@app.route("/performed-songs-summaries/", methods=["GET"])
-def performed_songs_summaries():
+# @app.route("/performed-songs-summaries/", methods=["GET"])
+# def performed_songs_summaries():
 
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    summaries = [
-        resolver.summarize_performed_song(id_)
-        for id_ in resolver.db_handler.query("SELECT * FROM SongPerform ORDER BY song_id")["id"]
-    ]
-    summaries = sorted(
-        summaries,
-        key=lambda song: (song["event_occ"]["event_occ_date"], song["song"]["song"])
-    )
-    summaries_by_event = defaultdict(list)
-    for summary in summaries:
-        summaries_by_event[summary["event_occ"]["event"]].append(summary)
-    summaries_by_event = list(summaries_by_event.values())
-    summaries_by_event = sorted(
-        summaries_by_event,
-        key=lambda event: event[0]["event_occ"]["event_occ_date"]
-    )
+#     db_handler = init_db_handler()
+#     resolver = Resolver(db_handler)
+#     summaries = [
+#         resolver.summarize_performed_song(id_)
+#         for id_ in resolver.db_handler.query("SELECT * FROM SongPerform ORDER BY song_id")["id"]
+#     ]
+#     summaries = sorted(
+#         summaries,
+#         key=lambda song: (song["event_occ"]["event_occ_date"], song["song"]["song"])
+#     )
+#     summaries_by_event = defaultdict(list)
+#     for summary in summaries:
+#         summaries_by_event[summary["event_occ"]["event"]].append(summary)
+#     summaries_by_event = list(summaries_by_event.values())
+#     summaries_by_event = sorted(
+#         summaries_by_event,
+#         key=lambda event: event[0]["event_occ"]["event_occ_date"]
+#     )
 
-    return render_template("performed_songs_summaries.html", summaries_by_event=summaries_by_event)
+#     return render_template("performed_songs_summaries.html", summaries_by_event=summaries_by_event)
 
 
 @app.route('/get-row-read/', methods=['POST']) 
@@ -126,8 +126,14 @@ def overview_event_occs():
 @app.route("/detail-event-occ/<string:event_occ_id>")
 def detail_event_occ(event_occ_id):
     db_handler = init_db_handler()
-    return render_template("detail_event_occ.html")
+    resolver = Resolver(db_handler)
+    event = resolver.get_denormalized_event_occ_df().loc[event_occ_id].to_dict()
+    return render_template("detail_event_occ.html", event=event)
 
+@app.route("/detail-event-gen/<string:event_gen_id>")
+def detail_event_gen(event_gen_id):
+    db_handler = init_db_handler()
+    return render_template("detail_event_gen.html")
 
 @app.route("/detail-performed-song/<string:song_perform_id>")
 def detail_performed_song(song_perform_id):
@@ -181,10 +187,10 @@ def detail_person(person_id):
     
     return render_template("detail_person.html", person=person)
 
-# @app.route("/detail-venue/", methods=["GET", "POST"])
-# def detail_venue():
-#     db_handler = init_db_handler()
-#     return render_template("detail_venue.html")
+@app.route("/detail-venue/<string:venue_id>")
+def detail_venue(venue_id):
+    db_handler = init_db_handler()
+    return render_template("detail_venue.html")
 
 
 if __name__ == '__main__':
