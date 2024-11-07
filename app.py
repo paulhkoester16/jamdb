@@ -99,6 +99,13 @@ def overview_event_occs():
     summaries = resolver.overview_event_occs().to_dict(orient="records")
     return render_template("overview_event_occs.html", summaries=summaries)
 
+@app.route("/overview-event-series/", methods=["GET"])
+def overview_event_series():
+    db_handler = init_db_handler()
+    resolver = Resolver(db_handler)
+    summaries = resolver.get_denormalized_event_gen_df().to_dict(orient="records")
+    return render_template("overview_event_series.html", summaries=summaries)
+
 @app.route("/overview-players/", methods=["GET"])
 def overview_players():
     db_handler = init_db_handler()
@@ -156,7 +163,7 @@ def detail_event_gen(event_gen_id):
 def detail_performed_song(song_perform_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
-    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()    
+    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
     return render_template("detail_performed_song.html", song=song)
 
 

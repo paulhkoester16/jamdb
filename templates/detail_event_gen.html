@@ -21,13 +21,13 @@
           <dt>Venue</dt>
           <dd>-  <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}">{{ event["venue_name"] }}</a></dd>
           {% if event["host_id"] != "unknown_host" %}
-            <dd>Host</dd>
-            <dt>- <a href="{{ url_for('detail_person', person_id=event['host_id']) }}">{{ event["host_public_name"] }} </a> </dt>
+            <dt>Host</dt>
+            <dd>- <a href="{{ url_for('detail_person', person_id=event['host_id']) }}">{{ event["host_public_name"] }} </a> </dd>
           {% endif %}
         </dl>
       </div>
       <div class="col-lg-6">
-        Events in this series
+        Instances that I've attended
         <ul>
             {% for occ in event["event_occs"] %}
             <li>

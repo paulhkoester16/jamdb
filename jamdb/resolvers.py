@@ -19,6 +19,12 @@ import copy
 import json
 from .globals import _format_id_as_str
 
+def youtube_link_to_embed(link):
+    embed_pref = "https://youtube.com/embed/"
+    for prefix in ["https://youtu.be/", "https://youtube.com/"]:
+        if link.startswith(prefix):
+            return link.replace(prefix, embed_pref)
+    return ""
 
 def _fill_na_to_list(df, col, tmp_fill=""):
     df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
@@ -66,6 +72,23 @@ class Resolver:
     def __init__(self, db_handler):
         self.db_handler = db_handler
 
+    def _processed_perf_videos(self):
+        def add_embed(row):
+            if row["source"] == "YouTube":
+                embed = youtube_link_to_embed(row["link"])
+                if embed != "":
+                    row["embed_link"] = embed
+            return row
+
+        videos = (
+            self.db_handler.query("SELECT * FROM PerformanceVideoView")
+            .set_index("performance_video_id")
+            .apply(lambda x: add_embed(x.to_dict()), axis=1)
+            .reset_index()
+            .rename(columns={0: "video"})            
+        )
+        return videos
+ 
     def get_denormalized_persons_df(self):
         try:
             return self.__denormalized_persons_df
@@ -163,24 +186,59 @@ class Resolver:
             def to_list(x):
                 return [x]
 
-            performer = self.db_handler.query("SELECT * FROM SongPerformerView")
-            performer["person_instrument_ids"] = performer["person_instrument_id"].apply(to_list)
-            performer["person_ids"] = performer["person_id"].apply(to_list)
-            performer["instrument_ids"] = performer["instrument_id"].apply(to_list)
-            agg_performer = (
-                performer.groupby("song_perform_id")
-                [["person_instrument_ids", "person_ids", "instrument_ids"]]
-                .sum().reset_index()
+            song_performer = self.db_handler.query(
+                f"""
+                SELECT
+                    sp.song_perform_id,
+                    sp.person_instrument_id,
+                    sp.person_id,
+                    p.public_name,
+                    p.full_name,
+                    i.instrument
+                FROM
+                    SongPerformerView as sp
+                INNER JOIN InstrumentView as i
+                   ON sp.instrument_id = i.instrument_id
+                INNER JOIN PersonView as p
+                   ON sp.person_id = p.person_id
+                ;
+                """
+            )
+            agg_players = _group_lists(
+                (
+                    _group_lists(
+                        song_performer,
+                        ["song_perform_id",  "person_id", "public_name", "full_name"]
+                    )
+                    .set_index("song_perform_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={0: "player"})
+                ),
+                "song_perform_id",
+                dedup=False
+            )
+            
+            videos = self._processed_perf_videos()
+            videos["song_perform_id"] = videos["video"].apply(lambda x: x["song_perform_id"])
+            videos = _group_lists(
+                videos.set_index("song_perform_id")[["video"]],
+                "song_perform_id",
+                dedup=False
             )
 
             output = (
                 self.db_handler.query("SELECT * FROM SongPerformView").merge(
-                    agg_performer,
+                    agg_players,
+                    on="song_perform_id",
+                    how="left"
+                ).merge(
+                    videos,
                     on="song_perform_id",
                     how="left"
                 )
             )
-            for col in agg_performer.columns:
+            for col in list(agg_players.columns) + list(videos.columns):
                 if col == "song_perform_id":
                     continue
                 _fill_na_to_list(output, col, tmp_fill="")

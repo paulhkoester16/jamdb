@@ -288,6 +288,10 @@ CREATE VIEW InstrumentView AS
     SELECT i.id as instrument_id, i.instrument
     FROM Instrument as i;
 
+CREATE VIEW PerformanceVideoView AS
+    SELECT v.id as performance_video_id, song_perform_id, source, link
+    FROM PerformanceVideo as v;
+
 CREATE VIEW VenueView AS
     SELECT
         v.id as venue_id,
