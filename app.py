@@ -122,6 +122,7 @@ def overview_songs():
     # summaries = resolver.overview_songs().to_dict(orient="records")
     return render_template("overview_songs.html", summaries=summaries)
 
+
 # @app.route("/overview-performed-songs/", methods=["GET"])
 # def overview_performed_songs():
 #     db_handler = init_db_handler()
@@ -145,12 +146,14 @@ def overview_songs():
 #     summaries = resolver.overview_people().to_dict(orient="records")
 #     return render_template("overview_people.html", summaries=summaries)
 
+
 @app.route("/detail-event-occ/<string:event_occ_id>")
 def detail_event_occ(event_occ_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     event = resolver.get_denormalized_event_occ_df().loc[event_occ_id].to_dict()
     return render_template("detail_event_occ.html", event=event)
+
 
 @app.route("/detail-event-gen/<string:event_gen_id>")
 def detail_event_gen(event_gen_id):
@@ -159,6 +162,7 @@ def detail_event_gen(event_gen_id):
     event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
     return render_template("detail_event_gen.html", event=event)
 
+
 @app.route("/detail-performed-song/<string:song_perform_id>")
 def detail_performed_song(song_perform_id):
     db_handler = init_db_handler()
@@ -166,12 +170,12 @@ def detail_performed_song(song_perform_id):
     song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
     return render_template("detail_performed_song.html", song=song)
 
-
-# @app.route("/detail-song/", methods=["GET", "POST"])
-# def detail_performed_song():
-#     db_handler = init_db_handler()
-#     return render_template("detail_song.html")
-
+@app.route("/detail-song/<string:song_id>")
+def detail_song(song_id):
+    db_handler = init_db_handler()
+    resolver = Resolver(db_handler)
+    song = resolver.get_denormalized_songs_df().loc[song_id].to_dict()
+    return render_template("detail_song.html", song=song)
 
 @app.route("/detail-person/<string:person_id>")
 def detail_person(person_id):

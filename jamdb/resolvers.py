@@ -74,7 +74,7 @@ class Resolver:
 
     def _processed_perf_videos(self):
         def add_embed(row):
-            if row["source"] == "YouTube":
+            if row["source"].lower() == "youtube":
                 embed = youtube_link_to_embed(row["link"])
                 if embed != "":
                     row["embed_link"] = embed
@@ -88,6 +88,24 @@ class Resolver:
             .rename(columns={0: "video"})            
         )
         return videos
+
+    def _processed_ref_recordings(self):
+        def add_embed(row):
+            if row["source"].lower() == "youtube":
+                embed = youtube_link_to_embed(row["link"])
+                if embed != "":
+                    row["embed_link"] = embed
+            return row
+
+        ref_recs = (
+            self.db_handler.query("SELECT * FROM RefRecsView")
+            .set_index("song_id")
+            .apply(lambda x: add_embed(x.to_dict()), axis=1)
+            .reset_index()
+            .rename(columns={0: "reference_recording"})            
+        )
+        
+        return ref_recs
  
     def get_denormalized_persons_df(self):
         try:
@@ -251,21 +269,36 @@ class Resolver:
         try:
             return self.__denormalized_songs_df
         except AttributeError:
-            ref_recs_dict = (
-                self.db_handler.query("SELECT * FROM RefRecsView").set_index("song_id")
-                .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
-                .groupby("song_id").sum().to_dict()
+            ref_recs = self._processed_ref_recordings()
+            ref_recs = _group_lists(
+                ref_recs.set_index("song_id")[["reference_recording"]],
+                "song_id",
+                dedup=False
             )
+
+            
             charts_dict = (
                 self.db_handler.query("SELECT * FROM ChartsView").set_index("song_id")
                 .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
                 .groupby("song_id").sum().to_dict()
             )
 
-            output = self.db_handler.query("SELECT * FROM SongView")
+            output = self.db_handler.query("SELECT * FROM SongView").merge(
+                ref_recs,
+                how="left",
+                on="song_id"
+            )
+            
 
-            output["reference_recordings"] =  output["song_id"].apply(lambda x: ref_recs_dict.get(x, []))
+            # output["reference_recordings"] =  output["song_id"].apply(lambda x: ref_recs_dict.get(x, []))
             output["charts"] =  output["song_id"].apply(lambda x: charts_dict.get(x, []))
+
+            _fill_na_to_list(output, "reference_recordings", tmp_fill="")
+
+            
+            output.fillna("", inplace=True)
+            for col in output.columns:
+                output[col] = output[col].apply(lambda x: "" if x is None else x)
 
             output.index = list(output["song_id"])
             self.__denormalized_songs_df = output            

@@ -12,7 +12,11 @@
       <div class="col-lg-6">
         <dl>
           <dt> Song </dt>
-          <dd>- {{ song_name }}</dd>
+          <dd>- 
+            <a href="{{ url_for('detail_song', song_id=song['song_id']) }}">
+              {{ song_name }}
+            </a>
+          </dd>
           <dt> Event </dt>
           <dd>- 
             <a href="{{ url_for('detail_event_occ', event_occ_id=song['event_occ_id']) }}">
