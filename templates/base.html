@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+  <body>
+    <nav>
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <a class="navbar-brand" href="#">Jamming DB</a>
+            </div>
+            <ul class="nav navbar-nav">
+              <li><a href="{{ url_for('index') }}">Home</a></li>
+              <li><a href="{{ url_for('overview_songs') }}">Songs</a></li>
+              <li><a href="{{ url_for('overview_players') }}">Players</a></li>
+              <li><a href="{{ url_for('overview_event_occs') }}">Events</a></li>
+            </ul>
+          </div>
+        </nav>
+    </nav>
+    <div class="page-header" style="padding-top: 25px;"> 
+      <h1>{% block header %}{% endblock %}</h1>
+    </div>      
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <footer>
+            <!-- the footer code will go in here -->
+    </footer>
+      
+  </body>
+</html>
+
+
+

@@ -1,22 +1,12 @@
+{% extends 'base.html' %}
+
 {% set event_gen = event["event_gen"] %}
-<!doctype html> 
-<html lang="en"> 
-  
-<head>
-  <meta charset="utf-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1"> 
-  <title>Detail View of Event Series</title> 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+{% set title = event_gen %}
 
-</head>
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
 
-<body>
-  <div class="page-header">
-      <h1 class="text-center py-5"> {{ event_gen }}</h1>
-  </div>
-
+{% block content %}
   <div class="container">
     <div class="row">  
       <div class="col-lg-6">
@@ -50,17 +40,4 @@
       </div>
     </div>
   </div>
-<script>
-
-$(document).ready(function(){
-  $("#myInput").on("keyup", function() {
-    var value = $(this).val().toLowerCase();
-    $("#myTable tr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-    });
-  });
-});
-</script>
-    
-</body>
-</html>
+{% endblock %}
