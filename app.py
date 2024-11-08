@@ -110,8 +110,8 @@ def overview_event_series():
 def overview_players():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
-    summaries = []    
-    # summaries = resolver.overview_event_occs().to_dict(orient="records")
+    summaries = resolver.get_denormalized_persons_df().to_dict(orient="records")
+    ["songs_perform"]    
     return render_template("overview_players.html", summaries=summaries)
 
 @app.route("/overview-songs/", methods=["GET"])
