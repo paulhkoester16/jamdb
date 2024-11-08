@@ -1,9 +1,9 @@
-from jamdb.db import BackendSQLite
+from jamdb.globals import TEST_DATA_DIR, TEST_DB_FILE
+from jamdb.db import db_factory
 
-DB_FILE = "data/jamming.db"
-conn = BackendSQLite(DB_FILE)
+db_handler = db_factory(data_dir=TEST_DATA_DIR, db_file=TEST_DB_FILE)
 
 def test_simple():
-    actual = conn.get_row(table_name="Key", primary_key="D_minor")
+    actual = db_handler.get_row(table_name="Key", primary_key="D_minor")
     expected = {'id': 'D_minor', 'root': 'D', 'mode_id': 'minor'}
     assert actual == expected

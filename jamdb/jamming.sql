@@ -4,7 +4,11 @@ DROP TABLE IF EXISTS [_schema_tables];
 
 DROP TABLE IF EXISTS [_schema_columns];
 
+DROP TABLE IF EXISTS [Charts];
+
 DROP TABLE IF EXISTS [Composer];
+
+DROP TABLE IF EXISTS [Contact];
 
 DROP TABLE IF EXISTS [EventGen];
 
@@ -16,9 +20,15 @@ DROP TABLE IF EXISTS [Instrument];
 
 DROP TABLE IF EXISTS [Key];
 
+DROP TABLE IF EXISTS [Mode];
+
 DROP TABLE IF EXISTS [Person];
 
 DROP TABLE IF EXISTS [PersonInstrument];
+
+DROP TABLE IF EXISTS [PerformanceVideo];
+
+DROP TABLE IF EXISTS [RefRecs];
 
 DROP TABLE IF EXISTS [Setlist];
 
@@ -30,11 +40,11 @@ DROP TABLE IF EXISTS [SongLearn];
 
 DROP TABLE IF EXISTS [SongPerform];
 
+DROP TABLE IF EXISTS [SongPerformer];
+
 DROP TABLE IF EXISTS [SubGenre];
 
 DROP TABLE IF EXISTS [Venue];
-
-DROP TABLE IF EXISTS [Mode];
 
 /****  Create Tables ******************************/
 
@@ -51,6 +61,7 @@ CREATE TABLE _schema_columns (
 	PRIMARY KEY	(table_name, column),
 	FOREIGN KEY (table_name) REFERENCES _schema_tables (table_name)
 );
+
 
 CREATE TABLE Composer (
 	id	TEXT	NOT NULL,
@@ -73,11 +84,17 @@ CREATE TABLE Person (
 	id	TEXT	NOT NULL,
 	public_name	TEXT	NOT NULL	UNIQUE,
 	full_name	TEXT	NOT NULL	UNIQUE,
-    facebook	TEXT	DEFAULT "",
-    instagram	TEXT	DEFAULT "",
-    youtube	TEXT	DEFAULT "",
-    other_contact	TEXT	DEFAULT "",
 	PRIMARY KEY	(id)
+);
+
+CREATE TABLE Contact (
+	id	TEXT	NOT NULL,
+	person_id	TEXT	NOT NULL,
+	contact_type	TEXT	NOT NULL,
+	contact_info	TEXT	DEFAULT "",
+	link	TEXT	DEFAULT "",
+	PRIMARY KEY	(id),
+	FOREIGN KEY (person_id) REFERENCES Person (id)
 );
 
 CREATE TABLE Genre (
@@ -94,14 +111,14 @@ CREATE TABLE Instrument (
 
 CREATE TABLE Mode (
 	id	TEXT	NOT NULL,
-	mode_name	TEXT	NOT NULL	UNIQUE,
+	mode	TEXT	NOT NULL	UNIQUE,
 	PRIMARY KEY	(id)
 );
 
 CREATE TABLE EventGen (
 	id	TEXT	NOT NULL,
 	name	TEXT	NOT NULL	UNIQUE,
-	event_genre_id	TEXT	NOT NULL,
+	genre_id	TEXT	NOT NULL,
 	venue_id	TEXT	NOT NULL,
 	date	TEXT	NOT NULL,
 	time	TEXT	NOT NULL,
@@ -109,7 +126,7 @@ CREATE TABLE EventGen (
 	PRIMARY KEY	(id),
 	FOREIGN KEY (venue_id) REFERENCES Venue (id),
 	FOREIGN KEY (host_id) REFERENCES Person (id),
-	FOREIGN KEY (event_genre_id) REFERENCES Genre (id)
+	FOREIGN KEY (genre_id) REFERENCES Genre (id)
 );
 
 CREATE TABLE PersonInstrument (
@@ -153,6 +170,7 @@ CREATE TABLE SongLearn (
 	date	TEXT	NOT NULL,
 	key_id	TEXT,
 	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id),    
 	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
 
@@ -172,12 +190,28 @@ CREATE TABLE Song (
 	instrumental	TEXT,
 	key_id	TEXT,
 	composer_id	TEXT,
-	reference_recordings	TEXT	DEFAULT "",
-	charts	TEXT	DEFAULT "",
 	PRIMARY KEY	(id),
 	FOREIGN KEY (subgenre_id) REFERENCES SubGenre (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id),
 	FOREIGN KEY (composer_id) REFERENCES Composer (id)
+);
+
+CREATE TABLE RefRecs (
+	id	TEXT	NOT NULL,
+	song_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id)
+);
+
+CREATE TABLE Charts (
+	id	TEXT	NOT NULL,
+	song_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id)
 );
 
 CREATE TABLE SetlistSongs (
@@ -197,151 +231,255 @@ CREATE TABLE SongPerform (
 	id	TEXT	NOT NULL,
 	event_occ_id	TEXT	NOT NULL,
 	song_id	TEXT	NOT NULL,
-	instrument_id	TEXT,
 	key_id	TEXT,
-	video	TEXT	DEFAULT "",
-	other_player_01	TEXT,
-	other_player_02	TEXT,
-	other_player_03	TEXT,
-	other_player_04	TEXT,
-	other_player_05	TEXT,
-	other_player_06	TEXT,
-	other_player_07	TEXT,
-	other_player_08	TEXT,
-	other_player_09	TEXT,
-	other_player_10	TEXT,
-	other_player_11	TEXT,
-	other_player_12	TEXT,
-	other_player_13	TEXT,
-	other_player_14	TEXT,
-	other_player_15	TEXT,
-	other_player_16	TEXT,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (event_occ_id) REFERENCES EventOcc (id),
-	FOREIGN KEY (other_player_01) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_02) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_03) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_04) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_05) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_06) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_07) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_08) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_09) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_10) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_11) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_12) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_13) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_14) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_15) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (other_player_16) REFERENCES PersonInstrument (id),
-	FOREIGN KEY (instrument_id) REFERENCES Instrument (id),
 	FOREIGN KEY (song_id) REFERENCES Song (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
 
+CREATE TABLE SongPerformer (
+	id	TEXT	NOT NULL,
+	song_perform_id	TEXT	NOT NULL,
+	person_instrument_id	TEXT	NOT NULL,
+    PRIMARY KEY (id),
+	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id),
+	FOREIGN KEY (person_instrument_id) REFERENCES PersonInstrument (id),
+    UNIQUE(song_perform_id, person_instrument_id)
+);
 
-/***** Create Foreign Keys Constraints **************************/
+CREATE TABLE PerformanceVideo (
+	id	TEXT	NOT NULL,
+	song_perform_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+    PRIMARY KEY (id),
+	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id)
+);
 
-CREATE INDEX IFK__schema_columnstable_name ON _schema_tables (table_name);
+/***** Create Views ************************************************
+As general philosopy, use TABLES for writing and storing data and
+use VIEWS for reading data.
 
-CREATE INDEX IFK_EventGenvenue_id ON Venue (id);
+Some VIEWS appear pointless, just SELECT * from associated table.
+But this gives flexibility -- we may later decide parent table
+needs to be further factored into more normalized components.
+As long as downstream code only consumes from VIEWS, then downstream
+won't need to change.
+********************************************************************/
 
-CREATE INDEX IFK_EventGenhost_id ON Person (id);
+CREATE VIEW RefRecsView AS
+    SELECT rr.id as ref_ref_id, rr.song_id, rr.source, rr.link
+    FROM RefRecs as rr;
 
-CREATE INDEX IFK_EventGenevent_genre_id ON Genre (id);
+CREATE VIEW ChartsView AS
+    SELECT c.id as chart_id, c.song_id, c.source, c.link
+    FROM Charts as c;
 
-CREATE INDEX IFK_EventOccevent_gen_id ON EventGen (id);
+CREATE VIEW ContactView AS
+    SELECT c.id as contact_id, c.person_id, c.contact_type, c.contact_info, c.link
+    FROM Contact as c;
 
-CREATE INDEX IFK_Keymode_id ON Mode (id);
+CREATE VIEW PersonView AS
+    SELECT p.id as person_id, p.public_name, p.full_name
+    FROM Person as p;
 
-CREATE INDEX IFK_PersonInstrumentperson_id ON Person (id);
+CREATE VIEW InstrumentView AS
+    SELECT i.id as instrument_id, i.instrument
+    FROM Instrument as i;
 
-CREATE INDEX IFK_PersonInstrumentinstrument_id ON Instrument (id);
+CREATE VIEW PerformanceVideoView AS
+    SELECT v.id as performance_video_id, song_perform_id, source, link
+    FROM PerformanceVideo as v;
 
-CREATE INDEX IFK_SetlistSongssetlist_id ON Setlist (id);
+CREATE VIEW VenueView AS
+    SELECT
+        v.id as venue_id,
+    	v.venue,
+    	v.address,
+    	v.city,
+    	v.zip,
+    	v.state,
+    	v.web
+    FROM Venue as v;
 
-CREATE INDEX IFK_SetlistSongsinstrument_id ON Instrument (id);
+CREATE VIEW SubgenreView AS
+    SELECT
+        s.id as subgenre_id, s.genre_id, s.subgenre, g.genre
+    FROM Subgenre as s
+    INNER JOIN Genre as g
+        ON s.genre_id = g.id;
 
-CREATE INDEX IFK_SetlistSongssong_id ON Song (id);
+CREATE VIEW KeyView AS
+    SELECT
+        k.id as key_id, k.mode_id, k.root, m.mode, k.root || ' ' || m.mode as key
+    FROM Key as k
+    INNER JOIN Mode as m
+        ON k.mode_id = m.id;
 
-CREATE INDEX IFK_SetlistSongskey_id ON Key (id);
+CREATE VIEW EventGenView AS
+    SELECT 
+        e.id as event_gen_id,
+        e.genre_id as event_genre_id,
+        e.venue_id,
+        e.host_id,
+        e.date as event_gen_date,
+        e.time as event_gen_time,
+        e.name as event_gen,
+        v.venue as venue_name,
+        v.address as venue_address,
+        v.city as venue_city,
+        v.zip as venue_zip,
+        v.state as venue_state,
+        v.web as venue_web,
+        g.genre as event_genre,
+        p.public_name as host_public_name,
+        p.full_name as host_full_name
+    FROM EventGen as e
+    INNER JOIN Venue as v
+        ON e.venue_id = v.id
+    INNER JOIN Genre as g
+        ON e.genre_id = g.id
+    LEFT JOIN Person as p
+        ON e.host_id = p.id;
 
-CREATE INDEX IFK_Songsubgenre_id ON SubGenre (id);
+CREATE VIEW EventOccView AS
+    SELECT
+        o.id as event_occ_id,
+        o.name as event_occ,
+        o.date as event_occ_date,
+        g.*
+    FROM EventOcc as o
+    INNER JOIN EventGenView as g
+        ON o.event_gen_id = g.event_gen_id;
 
-CREATE INDEX IFK_Songkey_id ON Key (id);
+CREATE VIEW PersonInstrumentView AS
+    SELECT
+        a.id as person_instrument_id,
+        a.instrument_id,
+        a.person_id,
+        i.instrument,
+        p.full_name,
+        p.public_name
+    FROM PersonInstrument as a
+    INNER JOIN Person as p
+        ON a.person_id = p.id
+    INNER JOIN Instrument as i
+        ON a.instrument_id = i.id;
 
-CREATE INDEX IFK_Songcomposer_id ON Composer (id);
+CREATE VIEW SongView AS
+    SELECT
+        s.id as song_id,
+        s.song,
+        s.composer_id,
+        s.instrumental,
+        k.*,
+        sg.*
+    FROM Song as s
+    LEFT JOIN KeyView as k
+        ON s.key_id = k.key_id
+    LEFT JOIN SubgenreView as sg
+        ON s.subgenre_id = sg.subgenre_id;
 
-CREATE INDEX IFK_SongLearnkey_id ON Key (id);
+CREATE VIEW SongPerformerView AS
+    SELECT
+        sp.id as song_performer_id,
+        sp.song_perform_id,    
+        pi.id as person_instrument_id,
+        pi.person_id,
+        pi.instrument_id,
+        s.song_id,
+        s.event_occ_id
+    FROM SongPerformer as sp
+    INNER JOIN PersonInstrument as pi
+        ON pi.id = sp.person_instrument_id
+    INNER JOIN SongPerform as s
+        ON s.id = sp.song_perform_id;
 
-CREATE INDEX IFK_SongPerformevent_occ_id ON EventOcc (id);
+CREATE VIEW SongPerformView AS
+    SELECT 
+        sp.id as song_perform_id,
+        b.i_played,
+        b.num_players,
+        v.num_videos IS NOT NULL as has_video,
+        e.*,
+        s.*,
+        k.key_id as performed_key_id,
+        k.mode_id as performed_mode_id,
+        k.root as performed_root,
+        k.mode as performed_mode,
+        k.key as performed_key
+    FROM SongPerform as sp
+    LEFT JOIN (
+        SELECT
+            p.song_perform_id, SUM(a.me) > 0 as i_played, COUNT(p.id) as num_players
+        FROM SongPerformer as p
+        INNER JOIN (
+            SELECT
+                id, person_id = "paul_k" as me
+            FROM PersonInstrument
+            ) as a
+            ON p.person_instrument_id = a.id 
+        GROUP BY p.song_perform_id
+    ) as b
+        ON b.song_perform_id = sp.id
+    LEFT JOIN (
+        SELECT
+            song_perform_id, count(id) as num_videos
+        FROM PerformanceVideo
+        GROUP BY song_perform_id
+    ) as v
+        ON v.song_perform_id = sp.id
+    INNER JOIN EventOccView as e
+        ON e.event_occ_id = sp.event_occ_id
+    INNER JOIN SongView as s
+        ON s.song_id = sp.song_id
+    LEFT JOIN KeyView as k
+        ON k.key_id = sp.key_id;
 
-CREATE INDEX IFK_SongPerformother_player_01 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_02 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_03 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_04 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_05 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_06 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_07 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_08 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_09 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_10 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_11 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_12 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_13 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_14 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_15 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerformother_player_16 ON PersonInstrument (id);
-
-CREATE INDEX IFK_SongPerforminstrument_id ON Instrument (id);
-
-CREATE INDEX IFK_SongPerformsong_id ON Song (id);
-
-CREATE INDEX IFK_SongPerformkey_id ON Key (id);
-
-CREATE INDEX IFK_SubGenregenre_id ON Genre (id);
 
 /*** Populate Schema Tables *******************/
 
 INSERT INTO _schema_tables (table_name, description) VALUES
+	("Charts", "Links to charts for songs."),    
 	("Composer", "Composer information"),
+	("Contact", "Contact information for a person, e.g., social media links."),
 	("EventGen", "Recurring events, including event's venue and the recurrence pattern.  Due to the data design, even one-off gigs are defined in EventGen."),
 	("EventOcc", "Specific events, including the event's specific date and EventGen that it derives from."),
 	("Genre", "Coarse genre information. Genres are at the level of 'Jazz' vs 'Blues', etc.  See also `SubGrenre`."),
 	("Instrument", "Instrument information."),
 	("Key", "Key signature / mode information."),
+	("Mode", "Information about mode."),
+	("PerformanceVideo", "Video link for a performed song."),
 	("Person", "Public Information about a person."),
 	("PersonInstrument", "Which instruments are played by a given person."),
+	("RefRecs", "Links to reference recordings of songs."),
 	("Setlist", "Setlist information."),
 	("SetlistSongs", "Information about songs on a Setlist, including song name, key, and which instrument I will play."),
 	("Song", "Information about a song, including song name, key, etc."),
 	("SongLearn", "Information about songs that I've learned, including instrument, key, and when I learned it."),
-	("SongPerform", "Information about a particular performance of a song, including which instrument I played, which event I played at, and who else played."),
+	("SongPerform", "Information about a particular performance of a song."),
+	("SongPerformer", "Information about performers on a given performed song."),
 	("SubGenre", "Granular genre information. SubGenres can be at the level of 'Bop' vs 'Swing', etc.  See also `Grenre`."),
-	("Venue", "Information about a physical venue, including venue name, address, etc."),
-	("Mode", "Information about mode.");
+	("Venue", "Information about a physical venue, including venue name, address, etc.");
+
+
 
 INSERT INTO _schema_columns (table_name, column, description) VALUES
+	("Charts", "id", "Unique ID of the Chart."),
+	("Charts", "song_id", "ID of the Chart's song"),
+	("Charts", "source", "Source of the chart, e.g., web link or iReal, etc."),
+	("Charts", "link", "Link, etc., url or uri"),    
 	("Composer", "id", "Unique ID for Composer."),
 	("Composer", "composer", "Composer name."),
+	("Contact", "id", "Unique ID for Contact info."),
+	("Contact", "person_id", "ID for the Contact's person."),
+	("Contact", "contact_type", "The kind of contact, e.g., Facebook vs YouTube etc."),
+	("Contact", "contact_info", "Free form text contact info, like phone numbers, etc."),
+	("Contact", "link", "Hyperlink, e.g., for Facebook etc."),
 	("EventGen", "id", "Unique ID for EventGen."),
 	("EventGen", "name", "Name of EventGen, e.g., 'Jazz Madcats'"),
-	("EventGen", "event_genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
+	("EventGen", "genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
 	("EventGen", "venue_id", "ID of the event's venue."),
 	("EventGen", "date", "Recurrence patter, eg. '3rd Thursday'"),
 	("EventGen", "time", "Time of the event, eg., '4:00 pm - 7:00 pm'"),
@@ -357,16 +495,22 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Key", "id", "Unique ID for key."),
 	("Key", "root", "Root note of key, e.g, “Bb” or F#”, etc."),
 	("Key", "mode_id", "ID of the mode."),
+	("Mode", "id", "Unique ID of the mode."),
+	("Mode", "mode", "Descriptive name of the mode."),
+	("PerformanceVideo", "id", "Unique ID of the PerformanceVideo"),
+	("PerformanceVideo", "song_perform_id", "ID of the SongPerform"),
+	("PerformanceVideo", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("PerformanceVideo", "link", "Link, etc., url or uri"),    
 	("Person", "id", "Unique ID for Person."),
 	("Person", "public_name", "Person's publicly used name, typically their first name and last initial."),
 	("Person", "full_name", "Person's full name."),
-	("Person", "facebook", "Person's Facebook link(s)."),
-	("Person", "instagram", "Person's Instagram link(s)."),
-	("Person", "youtube", "Person's Youtube link(s)."),
-	("Person", "other_contact", "Other contact information for Person."),
 	("PersonInstrument", "id", "Unique ID for PersonInstrument."),
 	("PersonInstrument", "person_id", "ID of the Person."),
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
+	("RefRecs", "id", "Unique ID of the RefRec."),
+	("RefRecs", "song_id", "ID of the RefRec's song"),
+	("RefRecs", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("RefRecs", "link", "Link, etc., url or uri"),
 	("Setlist", "id", "Unique ID for SetList."),
 	("Setlist", "setlist", "Name of the SetList."),
 	("Setlist", "description", "Description of the SetList."),
@@ -381,8 +525,6 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Song", "instrumental", "Boolean as to if the song is an instrumental or not."),
 	("Song", "key_id", "ID of the Song's Key."),
 	("Song", "composer_id", "ID of the Song's Composer."),
-	("Song", "reference_recordings", "Link(s) to reference recordings, e.g., YouTube links or Spotify URLs"),
-	("Song", "charts", "Link(s) to reference charts."),
 	("SongLearn", "id", "Unique ID of the SongLearn."),
 	("SongLearn", "song_id", "ID of the Song."),
 	("SongLearn", "instrument_id", "ID of the Instrument I learned the Song on."),
@@ -391,25 +533,10 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("SongPerform", "id", "Unique ID of a SongPerform."),
 	("SongPerform", "event_occ_id", "ID of the performed song's EventOcc."),
 	("SongPerform", "song_id", "ID of the performed song's Song."),
-	("SongPerform", "instrument_id", "ID of which Instrument I played.  If NULL, then I did not play on this performance."),
 	("SongPerform", "key_id", "ID of the performed song's key.  This is provided to override if a particular performance is in different than the Song's default key."),
-	("SongPerform", "video", "Link(s) to recordings of the performance."),
-	("SongPerform", "other_player_01", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_02", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_03", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_04", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_05", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_06", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_07", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_08", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_09", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_10", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_11", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_12", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_13", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_14", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_15", "ID of PersonInstrument for another player who played this song."),
-	("SongPerform", "other_player_16", "ID of PersonInstrument for another player who played this song."),
+	("SongPerformer", "id", "Unique ID of the SongPerformer."),
+	("SongPerformer", "song_perform_id", "ID of the SongPerformed by the SongPerformer."),
+	("SongPerformer", "person_instrument_id", "ID of the PersonInstrument of the SongPerformer."),
 	("SubGenre", "id", "Unique ID of the SubGenre."),
 	("SubGenre", "subgenre", "Name of the SubGenre.  Subgenre provides more granularity than Genre.  E.g., 'Jazz' as a Genre, 'Bop', 'Swing' etc as SubGenres of 'Jazz'."),
 	("SubGenre", "genre_id", "ID of the Genre."),
@@ -419,6 +546,4 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Venue", "city", "City of the Venue."),
 	("Venue", "zip", "Zipcode of the Venue."),
 	("Venue", "state", "State of the Venue."),
-	("Venue", "web", "Link(s) to Venue's website."),
-	("Mode", "id", "Unique ID of the mode."),
-	("Mode", "mode_name", "Descriptive name of the mode.");
+	("Venue", "web", "Link(s) to Venue's website.");

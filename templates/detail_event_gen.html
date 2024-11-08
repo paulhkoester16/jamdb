@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% set event_gen = event["event_gen"] %}
+{% set title = event_gen %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">  
+      <div class="col-lg-6">
+        <dl>
+          <dt>Event Series</dt>
+          <dd>- {{ event_gen }}</dd>
+          <dt>Genre</dt>
+            <dd>- {{ event["event_genre"] }} </dd>
+          <dt>When</dt>
+          <dd>- {{ event["event_gen_date"] }} </dd>
+          <dd>- {{ event["event_gen_time"] }} </dd>
+          <dt>Venue</dt>
+          <dd>-  <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}">{{ event["venue_name"] }}</a></dd>
+          {% if event["host_id"] != "unknown_host" %}
+            <dt>Host</dt>
+            <dd>- <a href="{{ url_for('detail_person', person_id=event['host_id']) }}">{{ event["host_public_name"] }} </a> </dd>
+          {% endif %}
+        </dl>
+      </div>
+      <div class="col-lg-6">
+        Instances that I've attended
+        <ul>
+            {% for occ in event["event_occs"] %}
+            <li>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=occ['event_occ_id']) }}">
+                {{ occ['event_occ'] }}
+              </a>
+            </li>
+            {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock %}

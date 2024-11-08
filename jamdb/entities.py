@@ -1,21 +1,7 @@
 import hashlib
 
 import pandas as pd
-
-
-def _id_from_name(name):
-    return name.lower().strip().replace(" ", "_")
-
-def _format_id_as_str(x):
-    # Some ids are strs that look like nums, and pandas will cast them to float.
-    # This undoes that.
-    try:
-        x = float(x)
-        x = f"{x:.0f}"
-    except ValueError:
-        pass
-    return x
-
+from .globals import _id_from_name, _format_id_as_str
 
 class _EntityFactory(type):
     REGISTRY = {}

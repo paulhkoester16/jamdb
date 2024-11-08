@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% set song_name = song["song"] %}
+{% set title = song_name %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6">
+        <dl>
+          <dt> Song </dt>
+          <dd>- {{ song_name }}</dd>
+          {% if song['key'] != "" %} 
+            <dt> Typical key </dt>
+            <dd>- {{ song['key'] }}
+          {% endif %}
+          {% if song['genre'] != "" %}
+            <dt> Genre </dt>
+            <dd>- {{ song['genre'] }}
+          {% endif %}
+          {% if song.get('song_performs', []) != [] %}
+            <dt>Performances</dt>
+              {% for performance in song['song_performs'] %}
+                <dd>
+                  - <a href="{{ url_for('detail_performed_song', song_perform_id=performance['song_perform_id']) }}">
+                    Performed at {{ performance['event_occ'] }}
+                  </a>
+                </dd>
+            </dt>
+            {% endfor %}
+          {% endif %}
+          </dd>
+        </dl>
+      </div>
+      <div class="col-lg-6">
+        {% if song.get('reference_recordings', []) != [] %}
+          <h3>Reference Recordings</h3>
+          <ul>
+            {% for video in song['reference_recordings'] %}
+              <li>
+                {% if 'embed_link' in video %}
+                  <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
+                {% else %}
+                  <a href="{{ video['link'] }}"> {{ video['link'] }}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if song.get('charts', []) != [] %}
+          <h3>Charts</h3>
+          <ul>
+            {% for chart in song['charts'] %}
+              <li>
+                {% if 'embed_link' in chart %}
+                  <iframe height="100%" src="{{ chart['embed_link'] }}"></iframe>
+                {% else %}
+                  <a href="{{ chart['link'] }}"> {{ chart['link'] }}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

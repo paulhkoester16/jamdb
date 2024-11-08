@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% set venue_name = venue["venue"] %}
+{% set title = venue_name %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-6">
+        <div><a href="{{ venue['google_map_string'] }}"> {{ venue["address_string"] }}</a></div>
+        <div>
+          Hosted events / series
+          <ul>
+              {% for event in venue["event_gens"] %}
+              <li>
+                <a href="{{ url_for('detail_event_gen', event_gen_id=event['event_gen_id']) }}">
+                  {{ event['event_gen'] }}
+                </a>
+              </li>
+              {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <a href="{{ venue['web'] }}">{{ venue['web'] }}</a>          
+        <div class="embed-responsive embed-responsive-16by9">
+          <iframe class="embed-responsive-item" src="{{ venue['web'] }}" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

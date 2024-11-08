@@ -1,20 +1,10 @@
-<!doctype html> 
-<html lang="en"> 
-  
-<head>
-  <meta charset="utf-8"> 
-  <meta name="viewport" content="width=device-width, initial-scale=1"> 
-  <title>Overview of Events</title> 
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+{% extends 'base.html' %}
 
-</head>
+{% set title = "Overview of Events" %}
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
 
-<body>
-  <div class="page-header">
-    <h1>Overview of Events</h1>
-  </div>
+{% block content %}
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
@@ -25,18 +15,22 @@
           <td>
             <dl>
               <dt>Event</dt>
-              <dd>- <a href="{{summary['event']['id']}}">{{summary['event']['event_name']}}</a></dd>
+              <dd>- <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event']['event_occ_id']) }}">
+                {{ summary['event']['event_occ'] }}</a>
+              </dd>
               <dt>Venue</dt>
-              <dd>- <a href="{{summary['venue']['id']}}">{{summary['venue']['venue_name']}}</a></dd>
+              <dd>- <a href="{{ url_for('detail_venue', venue_id=summary['venue']['venue_id']) }}">
+                  {{ summary['venue']['venue_name'] }}</a>
+              </dd>
               <dt>Date</dt>
-              <dd>- {{summary['date']}}</dd>
+              <dd>- {{summary['event']['event_occ_date']}}</dd>
             </dl>
           </td>
           <td>
             <ul>
               {% for person in summary['players'] %}
               <li>
-                <a href="{{ url_for('detail_person', person_id=person['id']) }}">
+                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
                   {{person['public_name']}}
                 </a>
               </li>
@@ -45,8 +39,12 @@
           </td>
           <td>
             <ul>
-              {% for song in summary['songs'] %}
-              <li><a href="{{song['id']}}">{{song['song']}}</a></li>
+              {% for song in summary['songs'] %}                
+              <li>
+                <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                  {{ song["song"] }}
+               </a>
+              </li>
               {% endfor %}
             </ul>
           </td>
@@ -55,17 +53,16 @@
     {% endfor %}
     </table>
   </div>
-<script>
 
-$(document).ready(function(){
-  $("#myInput").on("keyup", function() {
-    var value = $(this).val().toLowerCase();
-    $("#myTable tr").filter(function() {
-      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+  <script>
+    $(document).ready(function(){
+      $("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#myTable tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
     });
-  });
-});
-</script>
-    
-</body>
-</html>
+  </script>
+
+{% endblock %}
