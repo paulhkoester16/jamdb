@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% set song_name = song["song"] %}
-{% set title = song_name %}
+{% set title = song_name ~ " performed at " ~ song['event_occ'] %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
