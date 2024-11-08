@@ -21,14 +21,14 @@
             <dt> Genre </dt>
             <dd>- {{ song['genre'] }}
           {% endif %}
-          {% if song.get('performances', []) != [] %}
+          {% if song.get('song_performs', []) != [] %}
             <dt>Performances</dt>
-              {% for performance in song['performances'] %}
+              {% for performance in song['song_performs'] %}
                 <dd>
-                  <a href="{{ url_for('detail_performed_song', song_perform_id=performance['ong_perform_id']) }}">
-                    {{ performance['event_occ'] }}
+                  - <a href="{{ url_for('detail_performed_song', song_perform_id=performance['song_perform_id']) }}">
+                    Performed at {{ performance['event_occ'] }}
                   </a>
-                </dd>dd
+                </dd>
             </dt>
             {% endfor %}
           {% endif %}

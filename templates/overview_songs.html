@@ -5,5 +5,55 @@
 {% block header %}{{ title }}{% endblock %}
 
 {% block content %}
-  <p>This is the home page content.</p>
+  <div class="container">
+    <input class="form-control" id="myInput" type="text" placeholder="Search..">
+    <table class="table table-bordered table-striped">
+    <head><tr><th>Details</th><th>Performances</th></tr></head>
+    {% for summary in summaries %}
+      <body id="myTable">
+        <tr>
+          <td>
+            <dl>
+              <dt>Song</dt>
+              <dd>- <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
+                  {{ summary["song"]}}
+                </a>
+              </dd>
+              {% if summary['key'] != "" %} 
+                <dt> Typical key </dt>
+                <dd>- {{ summary['key'] }}
+              {% endif %}
+              {% if summary['genre'] != "" %}
+                <dt> Genre </dt>
+                <dd>- {{ summary['genre'] }}
+              {% endif %}                
+            </dl>
+          </td>
+          <td>
+            <ul>
+              {% for song in summary["song_performs"] %}
+                <li> 
+                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                    Performed at {{ song["event_occ"] }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+      </body>
+    {% endfor %}
+    </table>
+  </div>
+
+  <script>
+    $(document).ready(function(){
+      $("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#myTable tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+  </script>
 {% endblock %}

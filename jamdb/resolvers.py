@@ -275,8 +275,19 @@ class Resolver:
                 "song_id",
                 dedup=False
             )
-
             
+            song_perfs = _group_lists(
+                (
+                    self.db_handler.query("SELECT song_id, song_perform_id, event_occ FROM SongPerformView")
+                    .set_index("song_id")
+                    .apply(lambda x: x.to_dict(), axis=1)
+                    .reset_index()
+                    .rename(columns={0: "song_perform"})
+                ),
+                "song_id",
+                dedup=False
+            )
+
             charts_dict = (
                 self.db_handler.query("SELECT * FROM ChartsView").set_index("song_id")
                 .apply(lambda row: [{"source": row["source"], "link": row["link"]}], axis=1)
@@ -287,14 +298,17 @@ class Resolver:
                 ref_recs,
                 how="left",
                 on="song_id"
+            ).merge(
+                song_perfs,
+                how="left",
+                on="song_id"
             )
-            
 
             # output["reference_recordings"] =  output["song_id"].apply(lambda x: ref_recs_dict.get(x, []))
             output["charts"] =  output["song_id"].apply(lambda x: charts_dict.get(x, []))
 
             _fill_na_to_list(output, "reference_recordings", tmp_fill="")
-
+            _fill_na_to_list(output, "song_performs", tmp_fill="")
             
             output.fillna("", inplace=True)
             for col in output.columns:

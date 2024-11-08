@@ -119,7 +119,7 @@ def overview_songs():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = []    
-    # summaries = resolver.overview_songs().to_dict(orient="records")
+    summaries = resolver.get_denormalized_songs_df().to_dict(orient="records")
     return render_template("overview_songs.html", summaries=summaries)
 
 
