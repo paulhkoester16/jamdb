@@ -41,7 +41,8 @@ class GetRowForm(Form):
 @app.route('/', methods=["GET", "POST"])
 def index():
     print(f"index:  {request.method}")
-    return render_template("index.html")
+    page_name = "index"
+    return render_template(f"{page_name}.html", page_name)
 
 
 @app.route('/get-row/', methods=["GET", "POST"])
@@ -97,30 +98,32 @@ def overview_event_occs():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = resolver.overview_event_occs().to_dict(orient="records")
-    return render_template("overview_event_occs.html", summaries=summaries)
+    page_name = "overview_event_occs"
+    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
 
 @app.route("/overview-event-series/", methods=["GET"])
 def overview_event_series():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = resolver.get_denormalized_event_gen_df().to_dict(orient="records")
-    return render_template("overview_event_series.html", summaries=summaries)
+    page_name = "overview_event_series"
+    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
 
 @app.route("/overview-players/", methods=["GET"])
 def overview_players():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     summaries = resolver.get_denormalized_persons_df().to_dict(orient="records")
-    ["songs_perform"]    
-    return render_template("overview_players.html", summaries=summaries)
+    page_name = "overview_players"
+    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)    
 
 @app.route("/overview-songs/", methods=["GET"])
 def overview_songs():
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
-    summaries = []    
     summaries = resolver.get_denormalized_songs_df().to_dict(orient="records")
-    return render_template("overview_songs.html", summaries=summaries)
+    page_name = "overview_songs"
+    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
 
 
 # @app.route("/overview-performed-songs/", methods=["GET"])
@@ -152,7 +155,8 @@ def detail_event_occ(event_occ_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     event = resolver.get_denormalized_event_occ_df().loc[event_occ_id].to_dict()
-    return render_template("detail_event_occ.html", event=event)
+    page_name = "detail_event_occ"
+    return render_template(f"{page_name}.html", page_name=page_name, event=event)
 
 
 @app.route("/detail-event-gen/<string:event_gen_id>")
@@ -160,7 +164,8 @@ def detail_event_gen(event_gen_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
-    return render_template("detail_event_gen.html", event=event)
+    page_name = "detail_event_gen"
+    return render_template(f"{page_name}.html", page_name=page_name, event=event)
 
 
 @app.route("/detail-performed-song/<string:song_perform_id>")
@@ -168,14 +173,16 @@ def detail_performed_song(song_perform_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
-    return render_template("detail_performed_song.html", song=song)
+    page_name = "detail_performed_song"
+    return render_template(f"{page_name}.html", page_name=page_name, song=song)
 
 @app.route("/detail-song/<string:song_id>")
 def detail_song(song_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     song = resolver.get_denormalized_songs_df().loc[song_id].to_dict()
-    return render_template("detail_song.html", song=song)
+    page_name = "detail_song"
+    return render_template(f"{page_name}.html", page_name=page_name, song=song)
 
 @app.route("/detail-person/<string:person_id>")
 def detail_person(person_id):
@@ -214,16 +221,17 @@ def detail_person(person_id):
         key=lambda x: x[1][0]["event_occ_id"]
     )        
     person["songs_performed_with_me"] = songs_performed_with_me
-    
-    return render_template("detail_person.html", person=person)
+
+    page_name = "detail_person"
+    return render_template(f"{page_name}.html", page_name=page_name, person=person)
 
 @app.route("/detail-venue/<string:venue_id>")
 def detail_venue(venue_id):
     db_handler = init_db_handler()
     resolver = Resolver(db_handler)
     venue = resolver.get_denormalized_venue_df().loc[venue_id].to_dict()
-        
-    return render_template("detail_venue.html", venue=venue)
+    page_name = "detail_venue"
+    return render_template(f"{page_name}.html", page_name=page_name, venue=venue)
 
 
 if __name__ == '__main__':

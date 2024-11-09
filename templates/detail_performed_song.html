@@ -10,31 +10,26 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-6">
-        <dl>
-          <dt> Song </dt>
-          <dd>- 
-            <a href="{{ url_for('detail_song', song_id=song['song_id']) }}">
-              {{ song_name }}
+        <div class="list-group">
+          <a href="{{ url_for('detail_song', song_id=song['song_id']) }}" class="list-group-item">
+            <h4>Song</h4>
+            {{ song_name }}
+          </a>
+          <a href="{{ url_for('detail_event_occ', event_occ_id=song['event_occ_id']) }}" class="list-group-item">
+            <h4>Event performed at</h4>
+              {{ song['event_occ'] }}<br/>
+              {{ song["event_occ_date"] }}
+          </a>
+        </div>
+        <h3>Performers</h3>
+        <div class="list-group">
+          {% for player in song["players"] %}
+            <a href="{{ url_for('detail_person', person_id=player['person_id']) }}" class="list-group-item">
+              <h5>{{ player['public_name']}}</h5>
+              {{ ", ".join(player["instruments"]) }}
             </a>
-          </dd>
-          <dt> Event </dt>
-          <dd>- 
-            <a href="{{ url_for('detail_event_occ', event_occ_id=song['event_occ_id']) }}">
-              {{ song['event_occ'] }}
-            </a>
-          </dd>
-          <dt> Date </dt>
-          <dd>- {{ song["event_occ_date"] }}</dd>
-          <dt> Performers </dt>
-            {% for player in song["players"] %}
-              <dd>
-                - <a href="{{ url_for('detail_person', person_id=player['person_id']) }}">
-                  {{ player['public_name']}}
-                </a>  
-                  {{ ", ".join(player["instruments"]) }}
-              </dd>
-            {% endfor %}
-        </dl>
+          {% endfor %}
+        </div>
       </div>
       <div class="col-lg-6">
         {% for video in song['videos'] %}

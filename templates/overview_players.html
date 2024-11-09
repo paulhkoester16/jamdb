@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% set title = "Overview of Players" %}
+
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 
@@ -9,22 +10,34 @@
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
-    <head><tr><th>Details</th><th>Events I've seen them at</th><th>Songs I've seen them play</th></tr></head>
+    <head>
+      <tr>
+        <th>Public Name</th>
+        <th>Full Name</th>
+        <th>Instruments</th>
+        <th>Events I've seen them at</th>
+        <th>Songs I've seen them play</th>
+      </tr>
+    </head>
     {% for summary in summaries %}
       <body id="myTable">
         <tr>
           <td>
-            <dl>
-              <dt>Full name</dt>
-              <dd>- <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}">
-                  {{ summary['full_name'] }}</a>
-              <dt>Public name</dt>
-              <dd>- {{ summary['public_name'] }}</dd>
-              <dt>Instruments</dt>
+            <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}">              
+              {{ summary['public_name'] }}
+            </a>
+          </td>
+          <td>
+            <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}">
+              {{ summary['full_name'] }}
+            </a>
+          </td>
+          <td>
+            <ul>
               {% for inst in summary["instruments"] %}
-                <dd>- {{ inst }}<dd>
-              {% endfor %}
-            </dl>
+                <li>{{ inst }}</li>
+              {% endfor %}              
+            </ul>
           </td>
           <td>
             <ul>

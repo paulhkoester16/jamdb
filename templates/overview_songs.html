@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% set title = "Overview of Songs" %}
+
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 
@@ -8,26 +9,31 @@
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
-    <head><tr><th>Details</th><th>Performances</th></tr></head>
+    <head>
+      <tr>
+        <th>Song</th>
+        <th>Typical Key</th>
+        <th>Genre</th>
+        <th>Performances</th>
+      </tr>
+    </head>
     {% for summary in summaries %}
       <body id="myTable">
         <tr>
           <td>
-            <dl>
-              <dt>Song</dt>
-              <dd>- <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
-                  {{ summary["song"]}}
-                </a>
-              </dd>
-              {% if summary['key'] != "" %} 
-                <dt> Typical key </dt>
-                <dd>- {{ summary['key'] }}
-              {% endif %}
-              {% if summary['genre'] != "" %}
-                <dt> Genre </dt>
-                <dd>- {{ summary['genre'] }}
-              {% endif %}                
-            </dl>
+            <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
+              {{ summary["song"]}}
+            </a>
+          </td>
+          <td>
+            {% if summary['key'] != "" %} 
+            {{ summary['key'] }}
+            {% endif %}              
+          </td>
+          <td>
+            {% if summary['genre'] != "" %}
+            {{ summary['genre'] }}
+            {% endif %}
           </td>
           <td>
             <ul>
