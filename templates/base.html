@@ -1,3 +1,13 @@
+{%
+    set nav = ({
+        "overview_songs": "Songs",
+        "overview_players": "Players",
+        "overview_event_occs": "Events",
+        "overview_event_series": "Event Series",
+    })
+%}
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -13,22 +23,22 @@
         <nav class="navbar navbar-inverse navbar-fixed-top">
           <div class="container-fluid">
             <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>  
               <a class="navbar-brand" href="{{ url_for('index') }}">Jamming DB</a>
             </div>
-            <ul class="nav navbar-nav">
-              <li {% if page_name == "overview_songs" %} class="active" {% endif %}>
-                  <a href="{{ url_for('overview_songs') }}">Songs</a>
-              </li>
-              <li {% if page_name == "overview_players" %} class="active" {% endif %}>
-                  <a href="{{ url_for('overview_players') }}">Players</a>
-              </li>
-              <li {% if page_name == "overview_event_occs" %} class="active" {% endif %}>
-                  <a href="{{ url_for('overview_event_occs') }}">Events</a>
-              </li>
-              <li {% if page_name == "overview_event_series" %} class="active" {% endif %}>
-                  <a href="{{ url_for('overview_event_series') }}">Event Series</a>
-              </li>
-            </ul>
+            <div class="collapse navbar-collapse" id="myNavbar">
+              <ul class="nav navbar-nav">
+                {% for nav_page, display_name in nav.items() %}
+                <li {% if page_name == nav_page %} class="active" {% endif %}>
+                    <a href="{{ url_for(nav_page) }}">{{ display_name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
           </div>
         </nav>
     </nav>
@@ -46,6 +56,3 @@
     </footer>
   </body>
 </html>
-
-
-
