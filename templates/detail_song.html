@@ -10,59 +10,67 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-6">
-        <dl>
-          <dt> Song </dt>
-          <dd>- {{ song_name }}</dd>
+        <div class="list-group">
+          <a href="#" class="list-group-item">
+            <h4>Song</h4>
+            {{ song_name }}
+          </a>
+
           {% if song['key'] != "" %} 
-            <dt> Typical key </dt>
-            <dd>- {{ song['key'] }}
+            <a href="#" class="list-group-item">
+              <h4>Typical key</h4>
+              {{ song["key"] }}
+            </a>
           {% endif %}
+
           {% if song['genre'] != "" %}
-            <dt> Genre </dt>
-            <dd>- {{ song['genre'] }}
+            <a href="#" class="list-group-item">
+              <h4>Genre</h4>
+              {{ song["genre"] }}
+            </a>
           {% endif %}
-          {% if song.get('song_performs', []) != [] %}
-            <dt>Performances</dt>
-              {% for performance in song['song_performs'] %}
-                <dd>
-                  - <a href="{{ url_for('detail_performed_song', song_perform_id=performance['song_perform_id']) }}">
-                    Performed at {{ performance['event_occ'] }}
-                  </a>
-                </dd>
-            </dt>
+        </div>
+
+        {% if song.get('song_performs', []) != [] %}
+          <h3>Performances</h3>
+          <div>
+            {% for perf in song['song_performs'] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=perf['song_perform_id']) }}"
+                class="list-group-item">
+                Performed at {{ perf['event_occ'] }}
+              </a>
             {% endfor %}
-          {% endif %}
-          </dd>
-        </dl>
+          </div>
+        {% endif %}        
       </div>
       <div class="col-lg-6">
         {% if song.get('reference_recordings', []) != [] %}
-          <h3>Reference Recordings</h3>
-          <ul>
+          <div>
+            <h3>Reference Recordings</h3>          
             {% for video in song['reference_recordings'] %}
-              <li>
-                {% if 'embed_link' in video %}
-                  <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
-                {% else %}
-                  <a href="{{ video['link'] }}"> {{ video['link'] }}</a>
-                {% endif %}
-              </li>
+              {% if 'embed_link' in video %}
+                <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
+              {% else %}
+                <a href="{{ video['link'] }}" class="list-group-item">
+                  {{ video['link'] }}
+                </a>
+              {% endif %}
             {% endfor %}
-          </ul>
+          </div>
         {% endif %}
+
         {% if song.get('charts', []) != [] %}
-          <h3>Charts</h3>
-          <ul>
+          <div>
+            <h3>Charts</h3>
             {% for chart in song['charts'] %}
-              <li>
-                {% if 'embed_link' in chart %}
-                  <iframe height="100%" src="{{ chart['embed_link'] }}"></iframe>
-                {% else %}
-                  <a href="{{ chart['link'] }}"> {{ chart['link'] }}</a>
-                {% endif %}
-              </li>
+              {% if 'embed_link' in chart %}
+                <iframe height="100%" src="{{ chart['embed_link'] }}"></iframe>
+              {% else %}
+                <a href="{{ chart['link'] }}" class="list-group-item">>
+                  {{ chart['link'] }}
+                </a>
+              {% endif %}
             {% endfor %}
-          </ul>
         {% endif %}
       </div>
     </div>

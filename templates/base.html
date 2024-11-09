@@ -1,3 +1,13 @@
+{%
+    set nav = ({
+        "overview_songs": "Songs",
+        "overview_players": "Players",
+        "overview_event_occs": "Events",
+        "overview_event_series": "Event Series",
+    })
+%}
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,24 +17,50 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <title>{% block title %}{% endblock %}</title>
+
+    <style>
+      .page-header {
+          padding-top: 25px;
+      }
+        
+      .sticky_thead {
+          position: sticky;
+          top: 40px;
+          background-color: #ffffff;
+          z-index: 1
+      }
+
+    </style>
+
   </head>
+
   <body>
     <nav>
         <nav class="navbar navbar-inverse navbar-fixed-top">
           <div class="container-fluid">
             <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>  
               <a class="navbar-brand" href="{{ url_for('index') }}">Jamming DB</a>
             </div>
-            <ul class="nav navbar-nav">
-              <li><a href="{{ url_for('overview_songs') }}">Songs</a></li>
-              <li><a href="{{ url_for('overview_players') }}">Players</a></li>
-              <li><a href="{{ url_for('overview_event_occs') }}">Events</a></li>
-              <li><a href="{{ url_for('overview_event_series') }}">Event Series</a></li>
-            </ul>
+            <div class="collapse navbar-collapse" id="myNavbar">
+              <ul class="nav navbar-nav">
+                {% for nav_page, display_name in nav.items() %}
+                <li {% if page_name == nav_page %} class="active" {% endif %}>
+                    <a href="{{ url_for(nav_page) }}">{{ display_name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
           </div>
         </nav>
     </nav>
-    <div class="page-header" style="padding-top: 25px;"> 
+
+      
+    <div class="page-header"> 
       <h1>{% block header %}{% endblock %}</h1>
     </div>      
     <div class="content">
@@ -36,6 +72,3 @@
     </footer>
   </body>
 </html>
-
-
-

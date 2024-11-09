@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% set title = "Overview of Players" %}
+
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 
@@ -9,48 +10,49 @@
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
-    <head><tr><th>Details</th><th>Events I've seen them at</th><th>Songs I've seen them play</th></tr></head>
-    {% for summary in summaries %}
-      <body id="myTable">
+      <thead class="sticky_thead">
         <tr>
-          <td>
-            <dl>
-              <dt>Full name</dt>
-              <dd>- <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}">
-                  {{ summary['full_name'] }}</a>
-              <dt>Public name</dt>
-              <dd>- {{ summary['public_name'] }}</dd>
-              <dt>Instruments</dt>
-              {% for inst in summary["instruments"] %}
-                <dd>- {{ inst }}<dd>
-              {% endfor %}
-            </dl>
-          </td>
-          <td>
-            <ul>
+          <th>Name</th>
+          <th>Instruments</th>
+          <th>Events I've seen them at</th>
+          <th>Songs I've seen them play</th>
+        </tr>
+      </thead>
+      <tbody id="myTable">        
+        {% for summary in summaries %}
+          <tr>
+            <td>
+              <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}" class="list-group-item">              
+                {{ summary['public_name'] }}
+                {% if summary['public_name'] != summary['full_name'] %}
+                  ({{ summary['full_name'] }})
+                {% endif %}
+              </a>
+            </td>
+            <td>
+              <ul>
+                {% for inst in summary["instruments"] %}
+                  <li>{{ inst }}</li>
+                {% endfor %}              
+              </ul>
+            </td>
+            <td class="list-group">
               {% for event in summary['event_occs'] %}
-              <li>
-                <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}">
+                <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}" class="list-group-item">
                   {{ event["event_occ"] }}
                </a>
-              </li>
               {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <ul>
+            </td>
+            <td class="list-group">
               {% for song in summary["songs_perform"] %}
-                <li> 
-                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                    {{ song["song"] }}
-                  </a>
-                </li>
+                <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
+                  {{ song["song"] }}
+                </a>
               {% endfor %}
-            </ul>
-          </td>
-        </tr>
-      </body>
-    {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}        
+      </tbody>
     </table>
   </div>
 

@@ -10,22 +10,44 @@
   <div class="container">
     <div class="row">  
       <div class="col-lg-6">
-        <dl>
-          <dt>Full name</dt>
-          <dd>- {{ person["full_name"] }}</dd>        
-          <dt>Public name</dt>
-          <dd>- {{ public_name }}</dd>
+        <div class="list-group">
+          <a href="#" class="list-group-item">
+            <h4>Full name</h4>
+            {{ person["full_name"] }}
+          </a>
+          <a href="#" class="list-group-item">
+            <h4>Public name</h4>
+            {{ person["public_name"] }}
+          </a>
+        </div>
+
+        {% if person["contacts"]|length > 0 %}
+          <h3>Contact Informations</h3>
           {% for contact_type, contact_links in person["contacts"].items() %}
-            <dt>{{ contact_type }}<dt>
-            {% for contact_link in contact_links %}
-              <dd>- <a href="{{ contact_link }}">{{ contact_link }}</a><dd>
-            {% endfor %}
+            {% if contact_links|length > 0 %}
+              <h4>{{ contact_type }}</h4>
+              <div class="list-group">
+                {% for contact_link in contact_links %}
+                  <a href="{{ contact_link }}" class="list-group-item">
+                    {{ contact_link }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
           {% endfor %}
-          <dt>Instruments played</dt>
+        {% endif %}
+
+        {% if person["instruments"]|length > 0 %}
+          <h3>Instruments played</h3>
+          <div class="list-group">              
             {% for inst in person["instruments"] %}
-              <dd>- {{ inst }}<dd>
+              <a href="#" class="list-group-item">              
+                {{ inst }}
+              </a>
             {% endfor %}
-        </dl>
+          </div>
+        {% endif %}
+          
       </div>
       <div class="col-lg-6">
         {% for img_link in person["pictures"] %}
@@ -33,51 +55,46 @@
         {% endfor %}
         
         <h3>Events I've seen {{ public_name }} at:</h3>
-        <ul>
+        <div class="list-group">
           {% for event in person["event_occs"] %}
-            <li>
-              <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}">
-                {{ event["event_occ"] }}
-              </a>
-            </li>
+            <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}" class="list-group-item">
+              {{ event["event_occ"] }}
+            </a>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     </div>
-      
+
+
     <div class="row">
       <div class="col-lg-6">
         <h3>Songs I've played with {{ public_name }}: </h3>
-        <dl>
+        <div class="list-group">          
           {% for event_id, songs in person["songs_performed_with_me"] %}
-            <dt> <a href="{{ url_for('detail_event_occ', event_occ_id=event_id) }}">{{ songs[0]["event_occ"] }}</a></dt>
-            {% for song in songs %}
-              <dd>
-                -  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                  {{ song["song"] }}
-                </a>                  
-              </dd>
+            {% for song in songs %}        
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}"
+                 class="list-group-item">
+                {{ song["song"] }} (at {{ song["event_occ"] }})
+              </a>
             {% endfor %}
           {% endfor %}
-        </dl>
+        </div>
       </div>
 
       <div class="col-lg-6">
         <h3>Other songs I've seen {{ public_name }} play:</h3>
-        <dl>
+        <div class="list-group">          
           {% for event_id, songs in person["songs_performed_without_me"] %}
-            <dt> <a href="{{ url_for('detail_event_occ', event_occ_id=event_id) }}">{{ songs[0]["event_occ"] }}</a></dt>
-            {% for song in songs %}
-              <dd>
-                -  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                  {{ song["song"] }}
-                </a>                  
-              </dd>
+            {% for song in songs %}        
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}"
+                 class="list-group-item">
+                {{ song["song"] }} (at {{ song["event_occ"] }})
+              </a>
             {% endfor %}
           {% endfor %}
-        </dl>
-      </div>
-    </div>        
+        </div>
+      </div>        
+
     </div>
   </div>
 {% endblock %}
