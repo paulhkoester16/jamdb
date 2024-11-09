@@ -12,6 +12,7 @@
       <thead class="sticky_thead">
         <tr>
           <th>Event</th>
+          <th>Venue</th>
           <th>People</th>
           <th>Songs</th>
         </tr>
@@ -20,40 +21,28 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <dl>
-                <dt>Event</dt>
-                <dd>- <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event']['event_occ_id']) }}">
-                  {{ summary['event']['event_occ'] }}</a>
-                </dd>
-                <dt>Venue</dt>
-                <dd>- <a href="{{ url_for('detail_venue', venue_id=summary['venue']['venue_id']) }}">
-                    {{ summary['venue']['venue_name'] }}</a>
-                </dd>
-                <dt>Date</dt>
-                <dd>- {{summary['event']['event_occ_date']}}</dd>
-              </dl>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event']['event_occ_id']) }}" class="list-group-item">
+                {{ summary['event']['event_occ'] }} ( {{ summary['event']['event_occ_date'] }} )
+              </a>
             </td>
             <td>
-              <ul>
-                {% for person in summary['players'] %}
-                <li>
-                  <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
-                    {{person['public_name']}}
-                  </a>
-                </li>
-                {% endfor %}
-              </ul>
+              <a href="{{ url_for('detail_venue', venue_id=summary['venue']['venue_id']) }}" class="list-group-item">
+                {{ summary['venue']['venue_name'] }}
+              </a>
             </td>
-            <td>
-              <ul>
-                {% for song in summary['songs'] %}                
-                <li>
-                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                    {{ song["song"] }}
-                 </a>
-                </li>
-                {% endfor %}
-              </ul>
+            <td class="list-group">
+              {% for person in summary['players'] %}
+                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}" class="list-group-item">
+                  {{person['public_name']}}
+                </a>
+              {% endfor %}
+            </td>
+            <td class="list-group">
+              {% for song in summary['songs'] %}
+                <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
+                  {{ song["song"] }}
+                </a>
+              {% endfor %}
             </td>
           </tr>
         {% endfor %}

@@ -11,42 +11,38 @@
     <table class="table table-bordered table-striped">
       <thead class="sticky_thead">
         <tr>
-          <th>Details</th>
-          <th>Instances that I've attended</th>
+          <th>Series</th>
+          <th>Venue</th>
+          <th>Host</th>
+          <th>Instances I've attended</th>
         </tr>
       </thead>
       <tbody id="myTable">        
         {% for summary in summaries %}
           <tr>
             <td>
-              <dl>
-                <dt>Event Series</dt>
-                <dd>- <a href="{{ url_for('detail_event_gen', event_gen_id=summary['event_gen_id']) }}">
-                  {{ summary['event_gen'] }}</a>
-                </dd>
-                <dt>When</dt>
-                <dd>- {{ summary['event_gen_time'] }} </dd>
-                <dd>- {{ summary['event_gen_date'] }} </dd>
-                <dt>Venue</dt>
-                <dd>- <a href="{{ url_for('detail_venue', venue_id=summary['venue_id']) }}">
-                    {{ summary['venue_name'] }}</a>
-                </dd>
-                <dt>Host</dt>
-                <dd>- <a href="{{ url_for('detail_person', person_id=summary['host_id']) }}">
-                    {{ summary['host_public_name'] }}</a>
-                </dd>
-              </dl>
+              <a href="{{ url_for('detail_event_gen', event_gen_id=summary['event_gen_id']) }} "class="list-group-item">
+                  {{ summary['event_gen'] }} <br/>
+                  {{ summary['event_gen_time'] }} <br/>
+                  {{ summary['event_gen_date'] }} <br/>
+              </a>
             </td>
             <td>
-              <ul>
-                {% for event in summary['event_occs'] %}
-                <li>
-                  <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}">
-                    {{ event["event_occ"] }}
-                 </a>
-                </li>
-                {% endfor %}
-              </ul>
+              <a href="{{ url_for('detail_venue', venue_id=summary['venue_id']) }}" class="list-group-item">
+                {{ summary['venue_name'] }}
+              </a>
+            </td>
+            <td>
+              <a href="{{ url_for('detail_person', person_id=summary['host_id']) }}" class="list-group-item">
+                {{ summary['host_public_name'] }}
+              </a>
+            </td>
+            <td class="list-group">
+              {% for event in summary['event_occs'] %}
+                <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}" class="list-group-item">
+                  {{ event["event_occ"] }}
+                </a>
+              {% endfor %}
             </td>
           </tr>
         {% endfor %}
