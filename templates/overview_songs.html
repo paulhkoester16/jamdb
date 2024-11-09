@@ -21,7 +21,7 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
+              <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}" class="list-group-item">
                 {{ summary["song"]}}
               </a>
             </td>
@@ -35,16 +35,12 @@
               {{ summary['genre'] }}
               {% endif %}
             </td>
-            <td>
-              <ul>
+            <td class="list-group">
                 {% for song in summary["song_performs"] %}
-                  <li> 
-                    <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
                       Performed at {{ song["event_occ"] }}
-                    </a>
-                  </li>
+                  </a>
                 {% endfor %}
-              </ul>
             </td>
           </tr>
         {% endfor %}
