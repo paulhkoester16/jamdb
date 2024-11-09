@@ -9,49 +9,55 @@
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
-    <head><tr><th>Event</th><th>People</th><th>Songs</th></tr></head>
-    {% for summary in summaries %}
-      <body id="myTable">
+      <thead class="sticky_thead">
         <tr>
-          <td>
-            <dl>
-              <dt>Event</dt>
-              <dd>- <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event']['event_occ_id']) }}">
-                {{ summary['event']['event_occ'] }}</a>
-              </dd>
-              <dt>Venue</dt>
-              <dd>- <a href="{{ url_for('detail_venue', venue_id=summary['venue']['venue_id']) }}">
-                  {{ summary['venue']['venue_name'] }}</a>
-              </dd>
-              <dt>Date</dt>
-              <dd>- {{summary['event']['event_occ_date']}}</dd>
-            </dl>
-          </td>
-          <td>
-            <ul>
-              {% for person in summary['players'] %}
-              <li>
-                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
-                  {{person['public_name']}}
-                </a>
-              </li>
-              {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <ul>
-              {% for song in summary['songs'] %}                
-              <li>
-                <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                  {{ song["song"] }}
-               </a>
-              </li>
-              {% endfor %}
-            </ul>
-          </td>
+          <th>Event</th>
+          <th>People</th>
+          <th>Songs</th>
         </tr>
-      </body>
-    {% endfor %}
+      </thead>
+      <tbody id="myTable">        
+        {% for summary in summaries %}
+          <tr>
+            <td>
+              <dl>
+                <dt>Event</dt>
+                <dd>- <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event']['event_occ_id']) }}">
+                  {{ summary['event']['event_occ'] }}</a>
+                </dd>
+                <dt>Venue</dt>
+                <dd>- <a href="{{ url_for('detail_venue', venue_id=summary['venue']['venue_id']) }}">
+                    {{ summary['venue']['venue_name'] }}</a>
+                </dd>
+                <dt>Date</dt>
+                <dd>- {{summary['event']['event_occ_date']}}</dd>
+              </dl>
+            </td>
+            <td>
+              <ul>
+                {% for person in summary['players'] %}
+                <li>
+                  <a href="{{ url_for('detail_person', person_id=person['person_id']) }}">
+                    {{person['public_name']}}
+                  </a>
+                </li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td>
+              <ul>
+                {% for song in summary['songs'] %}                
+                <li>
+                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                    {{ song["song"] }}
+                 </a>
+                </li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
   </div>
 

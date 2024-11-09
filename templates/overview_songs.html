@@ -9,46 +9,46 @@
   <div class="container">
     <input class="form-control" id="myInput" type="text" placeholder="Search..">
     <table class="table table-bordered table-striped">
-    <head>
-      <tr>
-        <th>Song</th>
-        <th>Typical Key</th>
-        <th>Genre</th>
-        <th>Performances</th>
-      </tr>
-    </head>
-    {% for summary in summaries %}
-      <body id="myTable">
+      <thead class="sticky_thead">
         <tr>
-          <td>
-            <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
-              {{ summary["song"]}}
-            </a>
-          </td>
-          <td>
-            {% if summary['key'] != "" %} 
-            {{ summary['key'] }}
-            {% endif %}              
-          </td>
-          <td>
-            {% if summary['genre'] != "" %}
-            {{ summary['genre'] }}
-            {% endif %}
-          </td>
-          <td>
-            <ul>
-              {% for song in summary["song_performs"] %}
-                <li> 
-                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
-                    Performed at {{ song["event_occ"] }}
-                  </a>
-                </li>
-              {% endfor %}
-            </ul>
-          </td>
+          <th>Song</th>
+          <th>Typical Key</th>
+          <th>Genre</th>
+          <th>Performances</th>
         </tr>
-      </body>
-    {% endfor %}
+      </thead>
+      <tbody id="myTable">
+        {% for summary in summaries %}
+          <tr>
+            <td>
+              <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}">
+                {{ summary["song"]}}
+              </a>
+            </td>
+            <td>
+              {% if summary['key'] != "" %} 
+              {{ summary['key'] }}
+              {% endif %}              
+            </td>
+            <td>
+              {% if summary['genre'] != "" %}
+              {{ summary['genre'] }}
+              {% endif %}
+            </td>
+            <td>
+              <ul>
+                {% for song in summary["song_performs"] %}
+                  <li> 
+                    <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}">
+                      Performed at {{ song["event_occ"] }}
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
     </table>
   </div>
 

@@ -17,7 +17,22 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <title>{% block title %}{% endblock %}</title>
+
+    <style>
+      .page-header {
+          padding-top: 25px;
+      }
+        
+      .sticky_thead {
+          position: sticky;
+          top: 40px;
+          background-color: #ffffff;
+      }
+
+    </style>
+
   </head>
+
   <body>
     <nav>
         <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -44,7 +59,7 @@
     </nav>
 
       
-    <div class="page-header" style="padding-top: 25px;"> 
+    <div class="page-header"> 
       <h1>{% block header %}{% endblock %}</h1>
     </div>      
     <div class="content">
