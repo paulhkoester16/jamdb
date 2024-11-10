@@ -120,7 +120,55 @@ def get_index(resolver):
                 ] for x in item["detail"]["rows"]
             ]
 
+    index = {k: {"pages": v} for k, v in index.items()}
+    for display_name, v in index.items():
+        v["nav_pages"] = [x["nav_page"] for x in v["pages"].values()]
+        if "detail" in v["pages"]:
+            detail = v["pages"]["detail"]
+            dropdown = []
+            if "overview" in v["pages"]:
+                overview = v["pages"]["overview"]
+                dropdown.append(
+                    {
+                        "type": "header",
+                        "header_name": "Overview"
+                    }
+                )
+                dropdown.append(
+                    {
+                        "type": "ref",
+                        "nav_page": overview["nav_page"],
+                        "nav_kwargs": {},
+                        "nav_display": f"Overview {display_name}"
+                    }
+                )
+                dropdown.append(
+                    {
+                        "type": "header",
+                        "header_name": "Detail view"
+                    }
+                )
+            for row in detail["rows"]:
+                dropdown.append(
+                    {
+                        "type": "ref",
+                        "nav_page": detail["nav_page"],
+                        "nav_kwargs": row[0],
+                        "nav_display": row[1]
+                    }
+                )
+            v["dropdown"] = dropdown
+        else:
+            v["non_dropdown"] = [
+                {
+                    "type": "ref",
+                    "nav_page": overview["nav_page"],
+                    "nav_display": display_name
+                }
+            ]
     return index
+
+
 
 
 def my_render_template(resolver, page_name, **kwargs):
@@ -175,12 +223,12 @@ def overview_performance_videos():
     return my_render_template(resolver, page_name, summaries=summaries)
 
 
-# @app.route("/overview-performed-songs/", methods=["GET"])
-# def overview_performed_songs():
-#     resolver = init_resolver()
-#     summaries = resolver.overview_performed_songs().to_dict(orient="records")
-#     return render_template("overview_performed_songs.html", summaries=summaries)
-
+@app.route("/overview-performed-songs/", methods=["GET"])
+def overview_performed_songs():
+    page_name = "overview_performance_videos"
+    resolver = init_resolver()
+    summaries = resolver.get_denormalized_song_perform_df().to_dict(orient="records")
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 @app.route("/detail-event-occ/<string:event_occ_id>")

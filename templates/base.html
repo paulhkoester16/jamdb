@@ -48,27 +48,44 @@
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
               <ul class="nav navbar-nav">
-                {% for nav_page, display_name in nav_overview.items() %}
-                <li {% if page_name == nav_page %} class="active" {% endif %}>
-                    <a href="{{ url_for(nav_page) }}">{{ display_name }}</a>
-                </li>
-                {% endfor %}
 
-                {% for nav_display, page in index.items() %}
-                {% if "detail" in page %}
-                  {% set detail_page = page["detail"] %}
-                    <li class="dropdown{% if page_name == detail_page['nav_page'] %} active {% endif %}">
+                {% for main_nav_display, pages in index.items() %}
+                  {% set active = page_name in pages['nav_pages'] %}
+                  {% if "dropdown" in pages %}
+                    {% set dropdown = pages["dropdown"] %}
+                    <li class="dropdown{% if active %} active {% endif %}">
                       <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                        {{ nav_display }}
+                        {{ main_nav_display }}
                         <span class="caret"></span>
                       </a>
                       <ul class="dropdown-menu" style="overflow-y:auto; max-height:80vh">
-                        {% for row in detail_page["rows"] %}
-                          <li><a href="{{ url_for(detail_page['nav_page'], **row[0]) }}">{{ row[1] }}</a></li>
+                        {% for row in dropdown %}
+                          {% if row["type"] == "header" %}
+                            {% if row["header_name"] != "Overview" %}
+                              <li class="divider"></li>
+                            {% endif %}
+                            <li class="dropdown-header">
+                              {{ row["header_name"] }}
+                            </li>
+                          {% else %}
+                            <li>
+                              <a href="{{ url_for(row['nav_page'], **row['nav_kwargs']) }}">
+                                {{ row["nav_display"] }}
+                              </a>
+                            </li>
+                          {% endif %}
                         {% endfor %}
                       </ul>
                     </li>
-                  {% endif %}
+                    
+                    {% else %}
+                      {% set item = pages["non_dropdown"][0] %}
+                      <li {% if active %} class="active" {% endif %}>
+                      <a href="{{ url_for(item['nav_page']) }}">
+                        {{ main_nav_display }}
+                      </a>
+                    </li>                  
+                    {% endif %}
                 {% endfor %}
               </ul>
             </div>
