@@ -7,14 +7,6 @@
         "overview_performance_videos": "Videos"
     })
 %}
-<!-- 
-        "detail_song": "Song",
-        "detail_performed_song": "Performed Song",
-        "detail_person": "Person",
-        "detail_event_occ": "Event",
-        "detail_event_gen": "Series",
-        "detail_venue": "Venue",
--->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -61,23 +53,25 @@
                     <a href="{{ url_for(nav_page) }}">{{ display_name }}</a>
                 </li>
                 {% endfor %}
-                <li class="dropdown{% if page_name == 'detail_person' %} active {% endif %}">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                    Player Detail
-                    <span class="caret"></span>
-                  </a>
-                  <ul class="dropdown-menu">
-                    <li><a href="{{ url_for('detail_person', person_id='paul_k') }}">Paul K</a></li>
-                    <li><a href="{{ url_for('detail_person', person_id='travis_p') }}">Travis P</a></li>
-                    <li><a href="{{ url_for('detail_person', person_id='joe_j') }}">Joe J</a></li>
-                  </ul>
-                </li>
+
+                {% for details in index %}
+                  <li class="dropdown{% if page_name == details['nav_page'] %} active {% endif %}">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                      {{ details['nav_display'] }}
+                      <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" style="overflow-y:auto; max-height:80vh">
+                      {% for row in details["rows"] %}
+                        <li><a href="{{ url_for(details['nav_page'], **row[0]) }}">{{ row[1] }}</a></li>
+                      {% endfor %}
+                    </ul>
+                  </li>
+                {% endfor %}
               </ul>
             </div>
           </div>
         </nav>
     </nav>
-
       
     <div class="page-header"> 
       <h1>{% block header %}{% endblock %}</h1>
