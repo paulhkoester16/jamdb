@@ -35,10 +35,12 @@
         {% for video in song['videos'] %}
           {% if 'embed_link' in video %}
            <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
-          {% else %}
-          <a href="{{ video['link'] }}"> {{ video['link'] }}</a>
           {% endif %}
+          <a href="{{ video['link'] }}" class="list-group-item">
+            {{ video['link'] }}
+          </a>
         {% endfor %}
+
       </div>
     </div>
   </div>
