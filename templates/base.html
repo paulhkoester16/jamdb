@@ -1,13 +1,12 @@
 {%
-    set nav = ({
+    set nav_overview = ({
         "overview_songs": "Songs",
         "overview_players": "Players",
         "overview_event_occs": "Events",
-        "overview_event_series": "Event Series",
+        "overview_event_series": "Series",
         "overview_performance_videos": "Videos"
     })
 %}
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -49,17 +48,30 @@
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
               <ul class="nav navbar-nav">
-                {% for nav_page, display_name in nav.items() %}
+                {% for nav_page, display_name in nav_overview.items() %}
                 <li {% if page_name == nav_page %} class="active" {% endif %}>
                     <a href="{{ url_for(nav_page) }}">{{ display_name }}</a>
                 </li>
+                {% endfor %}
+
+                {% for details in index %}
+                  <li class="dropdown{% if page_name == details['nav_page'] %} active {% endif %}">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                      {{ details['nav_display'] }}
+                      <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" style="overflow-y:auto; max-height:80vh">
+                      {% for row in details["rows"] %}
+                        <li><a href="{{ url_for(details['nav_page'], **row[0]) }}">{{ row[1] }}</a></li>
+                      {% endfor %}
+                    </ul>
+                  </li>
                 {% endfor %}
               </ul>
             </div>
           </div>
         </nav>
     </nav>
-
       
     <div class="page-header"> 
       <h1>{% block header %}{% endblock %}</h1>

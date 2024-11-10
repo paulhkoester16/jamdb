@@ -8,120 +8,155 @@ from jamdb.globals import DATA_DIR
 
 app = Flask(__name__) 
 
+
 def init_db_handler():
     return db_factory(data_dir=DATA_DIR)
+
 
 def init_resolver(db_handler=None):
     if db_handler is None:
         db_handler = init_db_handler()
     return Resolver(db_handler)
 
-class GetRowForm(Form):
 
-    table_name = SelectField("table_name")
-    primary_key = SelectField("primary_key")
-    submit = SubmitField("submit")
+def get_index(resolver):
+    index = []
 
-    def possible_table_choices(self):
-        db_handler = init_db_handler()
-        choices = [("", "--choose--")]
-        choices.extend(
-            [
-                (table_name, table_name) for table_name in db_handler.table_names()
-            ]
-        )
-        return choices
+    query = "SELECT id, name FROM EventGen"
+    index.append(
+        [
+            "detail_event_gen",
+            "Event Series Detail",
+            "event_gen_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
 
-    def possible_pk_choices(self, table_name):
-        db_handler = init_db_handler()
-        choices = [("", "--choose--")]
-        ent = db_handler.entities.get(table_name)
-        if ent is not None:
-            pk_name = ent.primary_key
-            pks = list(db_handler.query(f"SELECT {pk_name} FROM {table_name}")[pk_name])
-            choices.extend([(pk, pk) for pk in pks])
-        return choices
+    query = "SELECT id, name FROM EventOcc"
+    index.append(
+        [
+            "detail_event_occ",
+            "Event Detail",            
+            "event_occ_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
+
+    query = """
+      SELECT
+        sp.id, s.song || ' @ ' || e.name as sp_name
+      FROM
+        SongPerform as sp
+      INNER JOIN Song as s
+          on s.id = sp.song_id
+      INNER JOIN EventOcc as e
+          on e.id = sp.event_occ_id
+      ORDER BY sp_name
+    """
+    index.append(
+        [
+            "detail_performed_song", 
+            "Performed Song Detail",            
+            "song_perform_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
+
+    query = "SELECT id, public_name FROM Person"
+    index.append(
+        [
+            "detail_person",
+            "Person Detail",            
+            "person_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
+
+    query = "SELECT id, song FROM Song"
+    index.append(
+        [
+            "detail_song",
+            "Song Detail",            
+            "song_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
+
+    query = "SELECT id, venue FROM Venue"
+    index.append(
+        [
+            "detail_venue",
+            "Venue Detail",
+            "venue_id",
+            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        ]
+    )
+
+    for idx, item in enumerate(index):
+        index[idx] = {
+            "nav_page": item[0], 
+            "nav_display": item[1],
+            "rows": [[{item[2]: x[0]}, x[1]] for x in item[3]]            
+        }
+    
+    return index
+
+
+def my_render_template(resolver, page_name, **kwargs):
+    index = get_index(resolver)
+    return render_template(f"{page_name}.html", page_name=page_name, index=index, **kwargs)
 
 
 @app.route('/', methods=["GET", "POST"])
 def index():
-    print(f"index:  {request.method}")
     page_name = "index"
-    return render_template(f"{page_name}.html", page_name=page_name)
-
-
-@app.route('/get-row/', methods=["GET", "POST"])
-def get_row():
-    form = GetRowForm(request.form)
-    print(f"get-row:  {request.method}")
-    form.table_name.choices = form.possible_table_choices()
-    if request.method == "POST" and form.table_name.data:
-        form.primary_key.choices = form.possible_pk_choices(form.table_name.data)
-    return render_template("get_row.html", form=form)
-
-
-@app.route('/get-row-read/', methods=['POST']) 
-def get_row_read():
-    db_handler = init_db_handler()
-    print(f"get-row-read:  {request.method}")    
-    data = request.form
-    print(data)
-    result = db_handler.get_row(
-        table_name=data["table_name"],
-        primary_key=data["primary_key"]
-    )
-
-    return result
+    resolver = init_resolver()
+    return my_render_template(resolver, page_name)
 
 
 @app.route("/overview-event-occs/", methods=["GET"])
 def overview_event_occs():
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    summaries = resolver.overview_event_occs().to_dict(orient="records")
     page_name = "overview_event_occs"
-    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
+    resolver = init_resolver()
+    summaries = resolver.overview_event_occs().to_dict(orient="records")
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 @app.route("/overview-event-series/", methods=["GET"])
 def overview_event_series():
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    summaries = resolver.get_denormalized_event_gen_df().to_dict(orient="records")
     page_name = "overview_event_series"
-    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
+    resolver = init_resolver()
+    summaries = resolver.get_denormalized_event_gen_df().to_dict(orient="records")
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 @app.route("/overview-players/", methods=["GET"])
 def overview_players():
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    summaries = resolver.get_denormalized_persons_df().to_dict(orient="records")
     page_name = "overview_players"
-    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)    
+    resolver = init_resolver()
+    summaries = resolver.get_denormalized_persons_df().to_dict(orient="records")
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 @app.route("/overview-songs/", methods=["GET"])
 def overview_songs():
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    summaries = resolver.get_denormalized_songs_df().to_dict(orient="records")
     page_name = "overview_songs"
-    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
+    resolver = init_resolver()
+    summaries = resolver.get_denormalized_songs_df().to_dict(orient="records")
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 @app.route("/overview-performance_videos/", methods=["GET"])
 def overview_performance_videos():
+    page_name = "overview_performance_videos"
     resolver = init_resolver()
     summaries = resolver.get_denormalized_performance_videos_df().to_dict(orient="records")
-    page_name = "overview_performance_videos"
-    return render_template(f"{page_name}.html", page_name=page_name, summaries=summaries)
+    return my_render_template(resolver, page_name, summaries=summaries)
 
 
 # @app.route("/overview-performed-songs/", methods=["GET"])
 # def overview_performed_songs():
-#     db_handler = init_db_handler()
-#     resolver = Resolver(db_handler)
+#     resolver = init_resolver()
 #     summaries = resolver.overview_performed_songs().to_dict(orient="records")
 #     return render_template("overview_performed_songs.html", summaries=summaries)
 
@@ -129,44 +164,41 @@ def overview_performance_videos():
 
 @app.route("/detail-event-occ/<string:event_occ_id>")
 def detail_event_occ(event_occ_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
+    page_name = "detail_event_occ"    
+    resolver = init_resolver()
     event = resolver.get_denormalized_event_occ_df().loc[event_occ_id].to_dict()
-    page_name = "detail_event_occ"
-    return render_template(f"{page_name}.html", page_name=page_name, event=event)
+    return my_render_template(resolver, page_name, event=event)
 
 
 @app.route("/detail-event-gen/<string:event_gen_id>")
 def detail_event_gen(event_gen_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
     page_name = "detail_event_gen"
-    return render_template(f"{page_name}.html", page_name=page_name, event=event)
+    resolver = init_resolver()
+    event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
+    return my_render_template(resolver, page_name, event=event)
 
 
 @app.route("/detail-performed-song/<string:song_perform_id>")
 def detail_performed_song(song_perform_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
     page_name = "detail_performed_song"
-    return render_template(f"{page_name}.html", page_name=page_name, song=song)
+    resolver = init_resolver()
+    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
+    return my_render_template(resolver, page_name, song=song)
 
 
 @app.route("/detail-song/<string:song_id>")
 def detail_song(song_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    song = resolver.get_denormalized_songs_df().loc[song_id].to_dict()
     page_name = "detail_song"
-    return render_template(f"{page_name}.html", page_name=page_name, song=song)
+    resolver = init_resolver()
+    song = resolver.get_denormalized_songs_df().loc[song_id].to_dict()
+    return my_render_template(resolver, page_name, song=song)
 
 
 @app.route("/detail-person/<string:person_id>")
 def detail_person(person_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
+    page_name = "detail_person"
+    
+    resolver = init_resolver()
     person = resolver.get_denormalized_persons_df().loc[person_id].to_dict()
     
     contacts = defaultdict(list)
@@ -201,17 +233,15 @@ def detail_person(person_id):
     )        
     person["songs_performed_with_me"] = songs_performed_with_me
 
-    page_name = "detail_person"
-    return render_template(f"{page_name}.html", page_name=page_name, person=person)
+    return my_render_template(resolver, page_name, person=person)
 
 
 @app.route("/detail-venue/<string:venue_id>")
 def detail_venue(venue_id):
-    db_handler = init_db_handler()
-    resolver = Resolver(db_handler)
-    venue = resolver.get_denormalized_venue_df().loc[venue_id].to_dict()
     page_name = "detail_venue"
-    return render_template(f"{page_name}.html", page_name=page_name, venue=venue)
+    resolver = init_resolver()
+    venue = resolver.get_denormalized_venue_df().loc[venue_id].to_dict()
+    return my_render_template(resolver, page_name, venue=venue)
 
 
 if __name__ == '__main__':

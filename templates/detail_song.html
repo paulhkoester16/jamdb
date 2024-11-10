@@ -50,11 +50,10 @@
             {% for video in song['reference_recordings'] %}
               {% if 'embed_link' in video %}
                 <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
-              {% else %}
-                <a href="{{ video['link'] }}" class="list-group-item">
-                  {{ video['link'] }}
-                </a>
               {% endif %}
+              <a href="{{ video['link'] }}" class="list-group-item">
+                {{ video['link'] }}
+              </a>
             {% endfor %}
           </div>
         {% endif %}
@@ -65,11 +64,10 @@
             {% for chart in song['charts'] %}
               {% if 'embed_link' in chart %}
                 <iframe height="100%" src="{{ chart['embed_link'] }}"></iframe>
-              {% else %}
-                <a href="{{ chart['link'] }}" class="list-group-item">>
-                  {{ chart['link'] }}
-                </a>
               {% endif %}
+              <a href="{{ chart['link'] }}" class="list-group-item">
+                {{ chart['link'] }}
+              </a>
             {% endfor %}
         {% endif %}
       </div>

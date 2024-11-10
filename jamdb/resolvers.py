@@ -75,7 +75,6 @@ def _apply_lookup_on_lists_col(df, lookup_df, col):
     return result
 
 class Resolver:
-    # TODO -- How much of these should be defined as VIEWS in the DB?
 
     def __init__(self, db_handler):
         self.db_handler = db_handler
@@ -114,7 +113,8 @@ class Resolver:
         )
         
         return ref_recs
- 
+
+
     def get_denormalized_persons_df(self):
         try:
             return self.__denormalized_persons_df
