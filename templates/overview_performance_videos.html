@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% set title = "Overview of Performance Videos" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <input class="form-control" id="myInput" type="text" placeholder="Search..">
+    <table class="table table-bordered table-striped">
+      <thead class="sticky_thead">
+        <tr>
+          <th>Video</th>
+          <th>Performed Song</th>
+          <th>Players</th>
+        </tr>
+      </thead>
+      <tbody id="myTable">        
+        {% for summary in summaries %}
+          <tr>
+            <td class="list-group">
+              {% if 'embed_link' in summary['video'] %}
+                <iframe loading="lazy" height="100%" src="{{ summary['video']['embed_link'] }}"></iframe>
+              {% endif %}
+              <a href="{{ summary['video']['link'] }}" class="list-group-item">
+                {{ summary['video']['link'] }}
+              </a>
+            </td>
+            <td class="list-group">
+              <a href="{{ url_for('detail_performed_song', song_perform_id=summary['song_perform_id']) }}" class="list-group-item">
+                {{ summary['song'] }}
+              </a>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event_occ_id']) }}" class="list-group-item">
+                {{ summary['event_occ'] }}<br/>
+                {{ summary['event_occ_date'] }}
+              </a>
+            </td>
+            <td class="list-group">
+              {% for person in summary['players'] %}
+                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}" class="list-group-item">
+                  {{ person['public_name'] }}; 
+                  {{ ", ".join(person['instruments']) }}
+                </a>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <script>      
+    $(document).ready(function(){
+      $("#myInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#myTable tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+  </script>
+
+{% endblock %}

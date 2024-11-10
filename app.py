@@ -16,62 +16,12 @@ def init_resolver(db_handler=None):
         db_handler = init_db_handler()
     return Resolver(db_handler)
 
-class GetRowForm(Form):
-
-    table_name = SelectField("table_name")
-    primary_key = SelectField("primary_key")
-    submit = SubmitField("submit")
-
-    def possible_table_choices(self):
-        db_handler = init_db_handler()
-        choices = [("", "--choose--")]
-        choices.extend(
-            [
-                (table_name, table_name) for table_name in db_handler.table_names()
-            ]
-        )
-        return choices
-
-    def possible_pk_choices(self, table_name):
-        db_handler = init_db_handler()
-        choices = [("", "--choose--")]
-        ent = db_handler.entities.get(table_name)
-        if ent is not None:
-            pk_name = ent.primary_key
-            pks = list(db_handler.query(f"SELECT {pk_name} FROM {table_name}")[pk_name])
-            choices.extend([(pk, pk) for pk in pks])
-        return choices
-
 
 @app.route('/', methods=["GET", "POST"])
 def index():
     print(f"index:  {request.method}")
     page_name = "index"
     return render_template(f"{page_name}.html", page_name=page_name)
-
-
-@app.route('/get-row/', methods=["GET", "POST"])
-def get_row():
-    form = GetRowForm(request.form)
-    print(f"get-row:  {request.method}")
-    form.table_name.choices = form.possible_table_choices()
-    if request.method == "POST" and form.table_name.data:
-        form.primary_key.choices = form.possible_pk_choices(form.table_name.data)
-    return render_template("get_row.html", form=form)
-
-
-@app.route('/get-row-read/', methods=['POST']) 
-def get_row_read():
-    db_handler = init_db_handler()
-    print(f"get-row-read:  {request.method}")    
-    data = request.form
-    print(data)
-    result = db_handler.get_row(
-        table_name=data["table_name"],
-        primary_key=data["primary_key"]
-    )
-
-    return result
 
 
 @app.route("/overview-event-occs/", methods=["GET"])

@@ -75,7 +75,6 @@ def _apply_lookup_on_lists_col(df, lookup_df, col):
     return result
 
 class Resolver:
-    # TODO -- How much of these should be defined as VIEWS in the DB?
 
     def __init__(self, db_handler):
         self.db_handler = db_handler
@@ -114,7 +113,57 @@ class Resolver:
         )
         
         return ref_recs
- 
+
+    def get_index(self):
+        index = {}
+    
+        query = "SELECT id, name as display_name FROM EventGen"
+        index["event_gen"] = [
+            {"event_gen_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        query = "SELECT id, name as display_name FROM EventOcc"
+        index["event_occ"] = [
+            {"event_occ_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        query = """
+          SELECT
+            sp.id, s.song || ' @ ' || e.name as display_name
+          FROM
+            SongPerform as sp
+          INNER JOIN Song as s
+              on s.id = sp.song_id
+          INNER JOIN EventOcc as e
+              on e.id = sp.event_occ_id
+        """
+        index["performed_song"] = [
+            {"song_perform_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        query = "SELECT id, public_name as display_name FROM Person"
+        index["person"] = [
+            {"person_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        query = "SELECT id, song as display_name FROM Song"
+        index["song"] = [
+            {"song_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        query = "SELECT id, venue as display_name FROM Venue"
+        index["venue"] = [
+            {"venue_id": x}
+            for x in self.db_handler.query(query).apply(lambda x: x.to_dict(), axis=1)
+        ]
+    
+        return index
+
     def get_denormalized_persons_df(self):
         try:
             return self.__denormalized_persons_df
