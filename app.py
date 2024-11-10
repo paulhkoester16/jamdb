@@ -171,10 +171,17 @@ def get_index(resolver):
 
 
 
-
 def my_render_template(resolver, page_name, **kwargs):
     index = get_index(resolver)
-    return render_template(f"{page_name}.html", page_name=page_name, index=index, **kwargs)
+    nav_page_has_my_table = {
+        entity["pages"]["overview"]["nav_page"]
+        for entity in index.values()
+        if "overview" in entity["pages"]
+    }
+    kwargs.update(
+        {"page_name": page_name, "index": index, "nav_page_has_my_table": nav_page_has_my_table}
+    )
+    return render_template(f"{page_name}.html", **kwargs)
 
 
 @app.route('/', methods=["GET", "POST"])
