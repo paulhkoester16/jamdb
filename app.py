@@ -159,6 +159,7 @@ def get_index(resolver):
                 )
             v["dropdown"] = dropdown
         else:
+            overview = v["pages"]["overview"]
             v["non_dropdown"] = [
                 {
                     "type": "ref",
@@ -225,7 +226,7 @@ def overview_performance_videos():
 
 @app.route("/overview-performed-songs/", methods=["GET"])
 def overview_performed_songs():
-    page_name = "overview_performance_videos"
+    page_name = "overview_performed_songs"
     resolver = init_resolver()
     summaries = resolver.get_denormalized_song_perform_df().to_dict(orient="records")
     return my_render_template(resolver, page_name, summaries=summaries)

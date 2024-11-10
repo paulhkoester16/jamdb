@@ -78,14 +78,14 @@
                       </ul>
                     </li>
                     
-                    {% else %}
-                      {% set item = pages["non_dropdown"][0] %}
-                      <li {% if active %} class="active" {% endif %}>
+                  {% else %}
+                    {% set item = pages["non_dropdown"][0] %}
+                    <li {% if active %} class="active" {% endif %}>
                       <a href="{{ url_for(item['nav_page']) }}">
                         {{ main_nav_display }}
                       </a>
                     </li>                  
-                    {% endif %}
+                  {% endif %}
                 {% endfor %}
               </ul>
             </div>
