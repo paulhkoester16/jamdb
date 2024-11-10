@@ -22,7 +22,7 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <a href="{{ url_for('detail_person', person_id=summary['person_id']) }}" class="list-group-item">              
+              <a href="{{ url_for('detail_player', person_id=summary['person_id']) }}" class="list-group-item">              
                 {{ summary['public_name'] }}
                 {% if summary['public_name'] != summary['full_name'] %}
                   ({{ summary['full_name'] }})

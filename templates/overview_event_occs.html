@@ -32,7 +32,7 @@
             </td>
             <td class="list-group">
               {% for person in summary['players'] %}
-                <a href="{{ url_for('detail_person', person_id=person['person_id']) }}" class="list-group-item">
+                <a href="{{ url_for('detail_player', person_id=person['person_id']) }}" class="list-group-item">
                   {{person['public_name']}}
                 </a>
               {% endfor %}

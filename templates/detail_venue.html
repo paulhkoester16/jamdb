@@ -13,7 +13,7 @@
         <h3>Hosted events / series</h3>
         <div class="list-group">
           {% for event in venue["event_gens"] %}
-            <a href="{{ url_for('detail_event_gen', event_gen_id=event['event_gen_id']) }}" class="list-group-item">
+            <a href="{{ url_for('detail_event_series', event_gen_id=event['event_gen_id']) }}" class="list-group-item">
                 {{ event['event_gen'] }}
             </a>
           {% endfor %}

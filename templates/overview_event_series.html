@@ -21,7 +21,7 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <a href="{{ url_for('detail_event_gen', event_gen_id=summary['event_gen_id']) }} "class="list-group-item">
+              <a href="{{ url_for('detail_event_series', event_gen_id=summary['event_gen_id']) }} "class="list-group-item">
                   {{ summary['event_gen'] }} <br/>
                   {{ summary['event_gen_time'] }} <br/>
                   {{ summary['event_gen_date'] }} <br/>
@@ -33,7 +33,7 @@
               </a>
             </td>
             <td>
-              <a href="{{ url_for('detail_person', person_id=summary['host_id']) }}" class="list-group-item">
+              <a href="{{ url_for('detail_player', person_id=summary['host_id']) }}" class="list-group-item">
                 {{ summary['host_public_name'] }}
               </a>
             </td>

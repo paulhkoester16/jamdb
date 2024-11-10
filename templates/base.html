@@ -54,18 +54,21 @@
                 </li>
                 {% endfor %}
 
-                {% for details in index %}
-                  <li class="dropdown{% if page_name == details['nav_page'] %} active {% endif %}">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                      {{ details['nav_display'] }}
-                      <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" style="overflow-y:auto; max-height:80vh">
-                      {% for row in details["rows"] %}
-                        <li><a href="{{ url_for(details['nav_page'], **row[0]) }}">{{ row[1] }}</a></li>
-                      {% endfor %}
-                    </ul>
-                  </li>
+                {% for nav_display, page in index.items() %}
+                {% if "detail" in page %}
+                  {% set detail_page = page["detail"] %}
+                    <li class="dropdown{% if page_name == detail_page['nav_page'] %} active {% endif %}">
+                      <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                        {{ nav_display }}
+                        <span class="caret"></span>
+                      </a>
+                      <ul class="dropdown-menu" style="overflow-y:auto; max-height:80vh">
+                        {% for row in detail_page["rows"] %}
+                          <li><a href="{{ url_for(detail_page['nav_page'], **row[0]) }}">{{ row[1] }}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </li>
+                  {% endif %}
                 {% endfor %}
               </ul>
             </div>

@@ -18,29 +18,35 @@ def init_resolver(db_handler=None):
         db_handler = init_db_handler()
     return Resolver(db_handler)
 
+    
 
 def get_index(resolver):
-    index = []
+    index = {}
 
     query = "SELECT id, name FROM EventGen"
-    index.append(
-        [
-            "detail_event_gen",
-            "Event Series Detail",
-            "event_gen_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
+    index["Series"] = {
+        "overview": {
+            "nav_page": "overview_event_series"
+        },
+        "detail": {
+            "nav_page": "detail_event_series",
+            "id": "event_gen_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        }
+    }
 
+    
     query = "SELECT id, name FROM EventOcc"
-    index.append(
-        [
-            "detail_event_occ",
-            "Event Detail",            
-            "event_occ_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
+    index["Events"] = {
+        "overview": {
+            "nav_page": "overview_event_occs"
+        },
+        "detail": {
+            "nav_page": "detail_event_occ",
+            "id": "event_occ_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        }
+    }
 
     query = """
       SELECT
@@ -53,52 +59,67 @@ def get_index(resolver):
           on e.id = sp.event_occ_id
       ORDER BY sp_name
     """
-    index.append(
-        [
-            "detail_performed_song", 
-            "Performed Song Detail",            
-            "song_perform_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
-
+    index["Performed Songs"] = {
+        "overview": {
+            "nav_page": "overview_performed_songs"
+        },
+        "detail": {
+            "nav_page": "detail_performed_song", 
+            "id": "song_perform_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        }
+    }
+    
     query = "SELECT id, public_name FROM Person"
-    index.append(
-        [
-            "detail_person",
-            "Person Detail",            
-            "person_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
+    index["Players"] = {
+        "overview": {
+            "nav_page": "overview_players"
+        },        
+        "detail": {
+            "nav_page": "detail_player",
+            "id": "person_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        }
+    }
 
     query = "SELECT id, song FROM Song"
-    index.append(
-        [
-            "detail_song",
-            "Song Detail",            
-            "song_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
+    index["Songs"] = {
+        "overview": {
+            "nav_page": "overview_songs"
+        },
+        "detail": {
+            "nav_page": "detail_song",
+            "id": "song_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
+        }
+    }
 
     query = "SELECT id, venue FROM Venue"
-    index.append(
-        [
-            "detail_venue",
-            "Venue Detail",
-            "venue_id",
-            list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        ]
-    )
-
-    for idx, item in enumerate(index):
-        index[idx] = {
-            "nav_page": item[0], 
-            "nav_display": item[1],
-            "rows": [[{item[2]: x[0]}, x[1]] for x in item[3]]            
+    index["Venues"] = {
+        "detail": {
+            "nav_page": "detail_venue",
+            "id": "venue_id",
+            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
         }
-    
+    }
+
+    index["Videos"] = {
+        "overview": {
+            "nav_page": "overview_performance_videos"
+        }
+    }
+
+    for item in index.values():
+        if "detail" in item:
+            item["detail"]["rows"] = [
+                [
+                    {
+                        item["detail"]["id"]: x[0]
+                    },
+                    x[1]
+                ] for x in item["detail"]["rows"]
+            ]
+
     return index
 
 
@@ -170,9 +191,9 @@ def detail_event_occ(event_occ_id):
     return my_render_template(resolver, page_name, event=event)
 
 
-@app.route("/detail-event-gen/<string:event_gen_id>")
-def detail_event_gen(event_gen_id):
-    page_name = "detail_event_gen"
+@app.route("/detail-event-series/<string:event_gen_id>")
+def detail_event_series(event_gen_id):
+    page_name = "detail_event_series"
     resolver = init_resolver()
     event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
     return my_render_template(resolver, page_name, event=event)
@@ -194,9 +215,9 @@ def detail_song(song_id):
     return my_render_template(resolver, page_name, song=song)
 
 
-@app.route("/detail-person/<string:person_id>")
-def detail_person(person_id):
-    page_name = "detail_person"
+@app.route("/detail-player/<string:person_id>")
+def detail_player(person_id):
+    page_name = "detail_player"
     
     resolver = init_resolver()
     person = resolver.get_denormalized_persons_df().loc[person_id].to_dict()

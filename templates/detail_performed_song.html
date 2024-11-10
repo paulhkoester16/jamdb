@@ -24,7 +24,7 @@
         <h3>Performers</h3>
         <div class="list-group">
           {% for player in song["players"] %}
-            <a href="{{ url_for('detail_person', person_id=player['person_id']) }}" class="list-group-item">
+            <a href="{{ url_for('detail_player', person_id=player['person_id']) }}" class="list-group-item">
               <h5>{{ player['public_name']}}</h5>
               {{ ", ".join(player["instruments"]) }}
             </a>
