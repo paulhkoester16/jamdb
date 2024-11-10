@@ -473,7 +473,7 @@ class Resolver:
         spv = (
             spv[spv["videos"].apply(lambda x: x != [])]
             .explode("videos").rename(columns={"videos": "video"})
-        )
+        ).sort_values(["event_occ_date", "song"])        
         return spv
     
     def overview_event_occs(self):
