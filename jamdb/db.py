@@ -188,7 +188,7 @@ class BackendSQLite(Backend):
                 # the sqllite error on UNIQUE is descriptive enough that we can
                 # probably fully parse error message here.
                 error_class = UniqueConstraintError
-            if any("NOT NULL" in msg for msg in exc.args):
+            elif any("NOT NULL" in msg for msg in exc.args):
                 # the sqllite error on UNIQUE is descriptive enough that we can
                 # probably fully parse error message here.
                 error_class = NotNullConstraintError
