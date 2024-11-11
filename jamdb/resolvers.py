@@ -19,6 +19,32 @@ import copy
 import json
 from .globals import _format_id_as_str
 
+
+def cleanup_youtube_link(link):
+    def _youtube_to_youtu_be(link):
+        prefixes = ["https://www.youtube.com", "https://m.youtube.com"]
+        for prefix in prefixes:
+            if link.startswith(prefix):
+                link = link.replace(prefix, "https://youtu.be")
+        return link
+    link = _youtube_to_youtu_be(link)
+
+    if "?" in link:
+        link, params = link.split("?", 1)
+        params = params.split("&")
+
+        if link.endswith("/watch"):
+            link = link[:-len("watch")]
+            uri = [param[2:] for param in params if param.startswith("v=")][0]
+            link += uri
+        kept_params = [x for x in params if x.startswith("t=")]
+        kept_params = "&".join(kept_params)
+        if kept_params != "":
+            link += f"?{kept_params}"
+    return link
+
+# TODO -- more generally just need a link_to_embed method; don't want
+#         callers to individually need to call multiple 
 def youtube_link_to_embed(link):
     embed_pref = "https://youtube.com/embed/"
     for prefix in ["https://youtu.be/", "https://youtube.com/"]:
@@ -33,6 +59,17 @@ def youtube_link_to_embed(link):
                 embed_link = embed_link + "?" + "&".join(params)
             return embed_link
     return ""
+
+def spotify_link_to_embed(link):
+    if "embed" in link:
+        embed_link = link
+    else:
+        pattern = "spotify.com/"
+        prefix, content = link.split(pattern)
+        prefix = f"{prefix}{pattern}embed/"
+        embed_link = f"{prefix}{content}"
+    return embed_link
+     
 
 def _fill_na_to_list(df, col, tmp_fill=""):
     df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
@@ -82,6 +119,7 @@ class Resolver:
     def _processed_perf_videos(self):
         def add_embed(row):
             if row["source"].lower() == "youtube":
+                row["link"] = cleanup_youtube_link(row["link"])
                 embed = youtube_link_to_embed(row["link"])
                 if embed != "":
                     row["embed_link"] = embed
@@ -99,9 +137,14 @@ class Resolver:
     def _processed_ref_recordings(self):
         def add_embed(row):
             if row["source"].lower() == "youtube":
+                row["link"] = cleanup_youtube_link(row["link"])
                 embed = youtube_link_to_embed(row["link"])
                 if embed != "":
                     row["embed_link"] = embed
+            elif row["source"].lower() == "spotify":
+                embed = spotify_link_to_embed(row["link"])
+                if embed != "":
+                    row["embed_link"] = embed                
             return row
 
         ref_recs = (

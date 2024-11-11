@@ -34,7 +34,8 @@
       <div class="col-lg-6">
         {% for video in song['videos'] %}
           {% if 'embed_link' in video %}
-           <iframe height="100%" src="{{ video['embed_link'] }}"></iframe>
+            <iframe style="border-radius:12px" src="{{ video['embed_link'] }}" width="100%" height="300" frameBorder="0"
+                allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>          
           {% endif %}
           <a href="{{ video['link'] }}" class="list-group-item">
             {{ video['link'] }}
