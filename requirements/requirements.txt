@@ -7,3 +7,5 @@ requests>=2.32.3
 Flask>=3.0.3
 Flask-GraphQL
 wtforms
+sqlalchemy
+graphene-sqlalchemy

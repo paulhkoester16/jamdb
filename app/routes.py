@@ -1,12 +1,13 @@
 from collections import defaultdict
+from flask import current_app as app
 from flask import Flask, request, render_template
+# from flask_graphql import GraphQLView
 from wtforms import Form, SelectField, SubmitField
 
 from jamdb.db import db_factory
 from jamdb.resolvers import Resolver
 from jamdb.globals import DATA_DIR
-
-app = Flask(__name__) 
+# from jamdb.graphene import GrapheneSQLSession
 
 
 def init_db_handler():
@@ -18,7 +19,6 @@ def init_resolver(db_handler=None):
         db_handler = init_db_handler()
     return Resolver(db_handler)
 
-    
 
 def get_index(resolver):
     index = {}
@@ -321,5 +321,10 @@ def detail_venue(venue_id):
     return my_render_template(resolver, page_name, venue=venue)
 
 
-if __name__ == '__main__':
-    app.run()
+
+
+# app.add_url_rule("/graphql", view_func=graphql_view, methods=["GET", "POST", "PUT", "DELETE"])
+
+
+# if __name__ == '__main__':
+#     app.run()

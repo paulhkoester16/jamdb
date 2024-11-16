@@ -1,6 +1,6 @@
 import copy
 
-def _id_from_name(name):
+def id_from_name(name):
     return name.lower().strip().replace(" ", "_")
 
 def format_id_as_str(x):

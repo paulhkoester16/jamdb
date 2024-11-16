@@ -17,7 +17,7 @@ from collections import defaultdict
 import pandas as pd
 import copy
 import json
-from .globals import _format_id_as_str
+from .transformations import format_id_as_str
 
 
 def cleanup_youtube_link(link):
@@ -491,7 +491,7 @@ class Resolver:
             )
 
             output = self.db_handler.query("SELECT * FROM VenueView")
-            output["zip"] = output["zip"].apply(_format_id_as_str)
+            output["zip"] = output["zip"].apply(format_id_as_str)
             output["address_string"] = output.apply(
                 lambda x: f"{x['address']}, {x['city']}, {x['state']}, {x['zip']}",
                 axis=1

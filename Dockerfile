@@ -61,11 +61,13 @@ RUN --mount=type=bind,source=tests,target=tests \
 USER appuser
 
 # Copy the source code into the container.
-COPY app.py app.py
 COPY jamdb jamdb
-COPY templates templates
+COPY app app
 
 
 # port needs to match that defined in compose.yaml
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=8989"]
+CMD flask --app app:init_app run --host=0.0.0.0 --port=8989
+
+
+
 
