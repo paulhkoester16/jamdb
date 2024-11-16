@@ -1,7 +1,9 @@
 import copy
 
+
 def id_from_name(name):
     return name.lower().strip().replace(" ", "_")
+
 
 def format_id_as_str(x):
     # Some ids are strs that look like nums, and pandas will cast them to float.
@@ -37,6 +39,7 @@ def cleanup_youtube_link(link):
             link += f"?{kept_params}"
     return link
 
+
 def create_embed_link(source, link):
     embed_link = ""
     if source.lower() == "youtube":
@@ -61,6 +64,7 @@ def _youtube_link_to_embed(link):
             return embed_link
     return ""
 
+
 def _spotify_link_to_embed(link):
     if "embed" in link:
         embed_link = link
@@ -70,44 +74,3 @@ def _spotify_link_to_embed(link):
         prefix = f"{prefix}{pattern}embed/"
         embed_link = f"{prefix}{content}"
     return embed_link
-     
-
-def _fill_na_to_list(df, col, tmp_fill=""):
-    df[col] = df.fillna({col: tmp_fill})[col].apply(lambda x: [] if x == tmp_fill else x)
-
-def _group_lists(df, group_by_cols, dedup=True):
-    dg = df.copy()
-    if isinstance(group_by_cols, (tuple, list)):
-        if len(group_by_cols) == 1:
-            composite_key = False
-        else:
-            composite_key = True
-    else:
-        composite_key = False
-        group_by_cols = [group_by_cols]
-        
-    new_cols = [f"{col}s" for col in df.columns if col not in group_by_cols]
-    for col in new_cols:
-        dg[col] = dg[col[:-1]].apply(lambda x: [x])
-
-    dg = dg.groupby(group_by_cols)[new_cols].sum().reset_index()
-    if dedup:
-        for col in new_cols:
-            dg[col] = dg[col].apply(lambda x: sorted(list(set(x))))
-
-    if composite_key:
-        dg.index = dg[group_by_cols]
-    else:
-        group_by_cols = group_by_cols[0]
-        dg.index = list(dg[group_by_cols])
-    return dg
-
-
-def _apply_lookup_on_lists_col(df, lookup_df, col):
-    def intersection(x):
-        if not isinstance(x, (list, set)):
-            x = [x]
-        return lookup_df.index.intersection(x)
-
-    result = df[col].apply(lambda x: list(lookup_df.loc[intersection(x)]))
-    return result
