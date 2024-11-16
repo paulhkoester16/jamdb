@@ -1,9 +1,7 @@
 # TODO --
-#   For all the `insert_row`, `delete_row` etc methods
-#   1. Move those to `_insert_row`, `_delete_row`
-#   2. Methods that make recurisve calls now call the `_insert_row`
-#   3. Create public `insert_row` mthods that first `self.close()`, `self._connect()`
-#      then `_insert_row`
+#   How much of this is still necessary, now that we're using sqlalchemy and graphene
+#   for all the operational stuff?
+#   Note that we do still use parts of this db_handler to create db.
 
 import json
 import sqlite3
