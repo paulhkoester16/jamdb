@@ -1,10 +1,10 @@
 PILLOW
-pandas>=2.2.3
-pandas-ods-reader>=1.0.1
-graphviz>=0.20.3
-graphene>=2.1.9
-requests>=2.32.3
-Flask>=3.0.3
+pandas
+pandas-ods-reader
+graphviz
+graphene
+requests
+Flask
 Flask-GraphQL
 wtforms
 sqlalchemy
