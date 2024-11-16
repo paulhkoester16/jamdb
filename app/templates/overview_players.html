@@ -21,31 +21,28 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <a href="{{ url_for('detail_player', person_id=summary['person_id']) }}" class="list-group-item">              
-                {{ summary['public_name'] }}
-                {% if summary['public_name'] != summary['full_name'] %}
-                  ({{ summary['full_name'] }})
-                {% endif %}
+              <a href="{{ url_for('detail_player', person_id=summary['id']) }}" class="list-group-item">              
+                {{ summary['combinedName'] }}
               </a>
             </td>
             <td>
               <ul>
-                {% for inst in summary["instruments"] %}
+                {% for inst in summary["instrumentList"] %}
                   <li>{{ inst }}</li>
                 {% endfor %}              
               </ul>
             </td>
             <td class="list-group">
-              {% for event in summary['event_occs'] %}
-                <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}" class="list-group-item">
-                  {{ event["event_occ"] }}
+              {% for event in summary['eventsAttended'] %}
+                <a href="{{ url_for('detail_event_occ', event_occ_id=event['id']) }}" class="list-group-item">
+                  {{ event["name"] }}
                </a>
               {% endfor %}
             </td>
             <td class="list-group">
-              {% for song in summary["songs_perform"] %}
-                <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
-                  {{ song["song"] }}
+              {% for song in summary["songPerforms"] %}
+                <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}" class="list-group-item">
+                  {{ song["song"]["song"] }}
                 </a>
               {% endfor %}
             </td>

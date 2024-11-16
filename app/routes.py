@@ -1,112 +1,90 @@
 from collections import defaultdict
 from flask import current_app as app
-from flask import Flask, request, render_template
-# from flask_graphql import GraphQLView
-from wtforms import Form, SelectField, SubmitField
+from flask import Flask, render_template
 
-from jamdb.db import db_factory
-from jamdb.resolvers import Resolver
-from jamdb.globals import DATA_DIR
-# from jamdb.graphene import GrapheneSQLSession
+from jamdb.globals import ME_ID
+from jamdb.graphene import GrapheneSQLSession
 
 
-def init_db_handler():
-    return db_factory(data_dir=DATA_DIR)
+def init_graphene_session():
+    return GrapheneSQLSession.from_sqlite_file()
 
 
-def init_resolver(db_handler=None):
-    if db_handler is None:
-        db_handler = init_db_handler()
-    return Resolver(db_handler)
-
-
-def get_index(resolver):
-    index = {}
-
-    query = "SELECT id, name FROM EventGen"
-    index["Series"] = {
-        "overview": {
-            "nav_page": "overview_event_series"
-        },
-        "detail": {
-            "nav_page": "detail_event_series",
-            "id": "event_gen_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
+def get_index(graphene_session):
+    result = graphene_session.execute("""query {
+        eventGens { id, name }
+        eventOccs { id, name }
+        songPerforms { id, songPerformName }
+        persons { id, publicName }
+        songs { id, song }
+        venues { id, venue }
+    }""").data
+    result = {k: [list(r.values()) for r in v] for k, v in result.items()}
 
     
-    query = "SELECT id, name FROM EventOcc"
-    index["Events"] = {
-        "overview": {
-            "nav_page": "overview_event_occs"
+    index = {
+        "Series": {
+            "overview": {
+                "nav_page": "overview_event_series"
+            },
+            "detail": {
+                "nav_page": "detail_event_series",
+                "id": "event_gen_id",
+                "rows": result["eventGens"]
+            }
         },
-        "detail": {
-            "nav_page": "detail_event_occ",
-            "id": "event_occ_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
-
-    query = """
-      SELECT
-        sp.id, s.song || ' @ ' || e.name as sp_name
-      FROM
-        SongPerform as sp
-      INNER JOIN Song as s
-          on s.id = sp.song_id
-      INNER JOIN EventOcc as e
-          on e.id = sp.event_occ_id
-      ORDER BY sp_name
-    """
-    index["Performed Songs"] = {
-        "overview": {
-            "nav_page": "overview_performed_songs"
+        "Events": {
+            "overview": {
+                "nav_page": "overview_event_occs"
+            },
+            "detail": {
+                "nav_page": "detail_event_occ",
+                "id": "event_occ_id",
+                "rows": result["eventOccs"]
+            }
         },
-        "detail": {
-            "nav_page": "detail_performed_song", 
-            "id": "song_perform_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
-    
-    query = "SELECT id, public_name FROM Person"
-    index["Players"] = {
-        "overview": {
-            "nav_page": "overview_players"
-        },        
-        "detail": {
-            "nav_page": "detail_player",
-            "id": "person_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
-
-    query = "SELECT id, song FROM Song"
-    index["Songs"] = {
-        "overview": {
-            "nav_page": "overview_songs"
+        "Performed Songs": {
+            "overview": {
+                "nav_page": "overview_performed_songs"
+            },
+            "detail": {
+                "nav_page": "detail_performed_song", 
+                "id": "song_perform_id",
+                "rows": result["songPerforms"]
+            }
         },
-        "detail": {
-            "nav_page": "detail_song",
-            "id": "song_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
-
-    query = "SELECT id, venue FROM Venue"
-    index["Venues"] = {
-        "detail": {
-            "nav_page": "detail_venue",
-            "id": "venue_id",
-            "rows": list(resolver.db_handler.query(query).apply(lambda x: x.to_list(), axis=1))
-        }
-    }
-
-    index["Videos"] = {
-        "overview": {
-            "nav_page": "overview_performance_videos"
-        }
+        "Players": {
+            "overview": {
+                "nav_page": "overview_players"
+            },        
+            "detail": {
+                "nav_page": "detail_player",
+                "id": "person_id",
+                "rows": result["persons"]
+            }
+        },
+        "Songs": {
+            "overview": {
+                "nav_page": "overview_songs"
+            },
+            "detail": {
+                "nav_page": "detail_song",
+                "id": "song_id",
+                "rows": result["songs"]
+            }
+        },
+        "Venues": {
+            "detail": {
+                "nav_page": "detail_venue",
+                "id": "venue_id",
+                "rows": result["venues"]
+            }
+        },
+        "Videos": {
+            "overview": {
+                "nav_page": "overview_performance_videos"
+            }
+        }    
     }
 
     for item in index.values():
@@ -170,9 +148,8 @@ def get_index(resolver):
     return index
 
 
-
-def my_render_template(resolver, page_name, **kwargs):
-    index = get_index(resolver)
+def my_render_template(graphene_session, page_name, **kwargs):
+    index = get_index(graphene_session)
     nav_page_has_my_table = {
         entity["pages"]["overview"]["nav_page"]
         for entity in index.values()
@@ -187,144 +164,242 @@ def my_render_template(resolver, page_name, **kwargs):
 @app.route('/', methods=["GET", "POST"])
 def index():
     page_name = "index"
-    resolver = init_resolver()
-    return my_render_template(resolver, page_name)
+    g_session = init_graphene_session()    
+    return my_render_template(g_session, page_name)
 
 
 @app.route("/overview-event-occs/", methods=["GET"])
 def overview_event_occs():
     page_name = "overview_event_occs"
-    resolver = init_resolver()
-    summaries = resolver.overview_event_occs().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          eventOccs {
+            id, name, date, venue { id, venue },
+            songPerforms { id, song { id, song } }
+            players { person { id, publicName } }
+          }
+        }
+        """
+    ).data["eventOccs"]
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/overview-event-series/", methods=["GET"])
 def overview_event_series():
     page_name = "overview_event_series"
-    resolver = init_resolver()
-    summaries = resolver.get_denormalized_event_gen_df().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          eventGens {
+            id, name, genre { genre }, time, date, venue { id, venue },
+            person { id, publicName }, eventOccs { id, name }
+          }
+        }""",
+    ).data["eventGens"]
+    for event in summaries:
+        event["host"] = event.pop("person")
+
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/overview-players/", methods=["GET"])
 def overview_players():
     page_name = "overview_players"
-    resolver = init_resolver()
-    summaries = resolver.get_denormalized_persons_df().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          persons {
+            id, combinedName, instrumentList, 
+            eventsAttended {id, name}, songPerforms {id, song { song } }
+          }
+        }
+        """
+    ).data["persons"]
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/overview-songs/", methods=["GET"])
 def overview_songs():
     page_name = "overview_songs"
-    resolver = init_resolver()
-    summaries = resolver.get_denormalized_songs_df().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          songs {
+            id, song, key { keyName }, subgenre { subgenreName }
+            songPerforms { id, eventocc { name } }
+          }
+        }
+        """
+    ).data["songs"]
+
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/overview-performance_videos/", methods=["GET"])
 def overview_performance_videos():
     page_name = "overview_performance_videos"
-    resolver = init_resolver()
-    summaries = resolver.get_denormalized_performance_videos_df().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          performanceVideos {
+            id, source, link, embeddableLink,
+            songperform {
+              id, song { song }, eventocc { id, name, date },
+              players { person {id, publicName}, instrumentList }
+            }
+          }
+        }
+        """
+    ).data["performanceVideos"]
+
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/overview-performed-songs/", methods=["GET"])
 def overview_performed_songs():
     page_name = "overview_performed_songs"
-    resolver = init_resolver()
-    summaries = resolver.get_denormalized_song_perform_df().to_dict(orient="records")
-    return my_render_template(resolver, page_name, summaries=summaries)
+    g_session = init_graphene_session()
+    summaries = g_session.execute(
+        """
+        query {
+          songPerforms {
+            id, songPerformName, song { id, song }, eventocc { id, name },
+            players { person {id, publicName}, instrumentList },
+            performanceVideos { songPerformId, source, link, embeddableLink}
+          }
+        }"""
+    ).data["songPerforms"]
+    return my_render_template(g_session, page_name, summaries=summaries)
 
 
 @app.route("/detail-event-occ/<string:event_occ_id>")
 def detail_event_occ(event_occ_id):
     page_name = "detail_event_occ"    
-    resolver = init_resolver()
-    event = resolver.get_denormalized_event_occ_df().loc[event_occ_id].to_dict()
-    return my_render_template(resolver, page_name, event=event)
+    g_session = init_graphene_session()
+    event = g_session.execute(
+        """
+        query getEventOcc ($id: ID) {
+          eventOcc (id: $id) {
+            id, name, date, eventgen { id, name, venue { id, venue } },
+            songPerforms { id, song { id, song } },
+            players { person {id, publicName}, instrumentList }
+          }
+        }
+        """,
+        variables={"id": event_occ_id}
+    ).data["eventOcc"]
+    return my_render_template(g_session, page_name, event=event)
 
 
 @app.route("/detail-event-series/<string:event_gen_id>")
 def detail_event_series(event_gen_id):
     page_name = "detail_event_series"
-    resolver = init_resolver()
-    event = resolver.get_denormalized_event_gen_df().loc[event_gen_id].to_dict()
-    return my_render_template(resolver, page_name, event=event)
+    g_session = init_graphene_session()
+    event = g_session.execute(
+        """
+        query getEventGen ($id: ID) {
+          eventGen (id: $id) {
+            id, name, genre { genre }, time, date, venue { id, venue },
+            person { id, publicName }, eventOccs { id, name }
+          }
+        }""",
+        variables={"id": event_gen_id}
+    ).data["eventGen"]
+    event["host"] = event.pop("person")
+    return my_render_template(g_session, page_name, event=event)
 
 
 @app.route("/detail-performed-song/<string:song_perform_id>")
 def detail_performed_song(song_perform_id):
     page_name = "detail_performed_song"
-    resolver = init_resolver()
-    song = resolver.get_denormalized_song_perform_df().loc[song_perform_id].to_dict()
-    return my_render_template(resolver, page_name, song=song)
+    g_session = init_graphene_session()
+    song = g_session.execute(
+        """
+        query getSongPerform ($id: ID) {
+          songPerform (id: $id) {
+            id, songPerformName, song { id, song }, eventocc { id, name },
+            players { person {id, publicName}, instrumentList },
+            performanceVideos { songPerformId, source, link, embeddableLink}
+          }
+        }""",
+        variables={"id": song_perform_id}
+    ).data["songPerform"]
+    return my_render_template(g_session, page_name, song=song)
 
 
 @app.route("/detail-song/<string:song_id>")
 def detail_song(song_id):
     page_name = "detail_song"
-    resolver = init_resolver()
-    song = resolver.get_denormalized_songs_df().loc[song_id].to_dict()
-    return my_render_template(resolver, page_name, song=song)
+    g_session = init_graphene_session()
+    song = g_session.execute(
+        """
+        query getSong($id: ID) {
+          song(id: $id) {
+            id, song, key { keyName }, subgenre { subgenreName }
+            songPerforms { id, eventocc { name } }
+            charts { link, embeddableLink }
+            refRecs { link, embeddableLink }
+          }
+        }
+        """,
+        variables={"id": song_id}
+    ).data["song"]
+    return my_render_template(g_session, page_name, song=song)
 
 
 @app.route("/detail-player/<string:person_id>")
 def detail_player(person_id):
+    # TODO:  person["pictures"] = [str(pic_path.absolute()) for pic_path in person["pictures"]]
     page_name = "detail_player"
-    
-    resolver = init_resolver()
-    person = resolver.get_denormalized_persons_df().loc[person_id].to_dict()
-    
-    contacts = defaultdict(list)
-    orig_contacts = person.pop("contacts", [])
-    for contact in orig_contacts:
-        if contact.get("link", "").strip() == "":
-            continue
-        contacts[contact["contact_type"]].append(contact["link"])
-    person["contacts"] = contacts
+    g_session = init_graphene_session()
+    person = g_session.execute(
+        """
+        query getPerson($id: ID, $otherPersonId: ID) {
+          person (id: $id) {
+            id, fullName, publicName, instrumentList
+            contacts { id, contactType, contactInfo, link, private },
+            eventsAttended { id, name, date },
+            songsPerformedWith(otherPersonId: $otherPersonId) { id, songPerformName },
+            songsPerformedWithout(otherPersonId: $otherPersonId) { id, songPerformName }
+          }
+        }
+        """,
+        variables={"id": person_id, "otherPersonId": ME_ID}
+    ).data["person"]
+    public_contacts_by_type = defaultdict(list)
+    for contact in person["contacts"]:
+        if not contact["private"]:
+            public_contacts_by_type[contact["contactType"]].append(contact)
+    person["public_contacts_by_type"] = public_contacts_by_type
 
-    person["pictures"] = [str(pic_path.absolute()) for pic_path in person["pictures"]]
-
-    with_me_ids = {x["song_perform_id"] for x in person["songs_performed_with_me"]}
-    songs_perform = defaultdict(list)
-    orig_songs_perform = person.pop("songs_perform", [])
-    for sp in orig_songs_perform:
-        if sp["song_perform_id"] not in with_me_ids:
-            songs_perform[sp["event_occ_id"]].append(sp)
-    songs_perform = sorted(
-        [[k, v] for k, v in songs_perform.items()],
-        key=lambda x: x[1][0]["event_occ_id"]
-    )
-    person["songs_performed_without_me"] = songs_perform
-
-    songs_performed_with_me = defaultdict(list)
-    orig_songs_performed_with_me = person.pop("songs_performed_with_me", [])
-    for sp in orig_songs_performed_with_me:
-        songs_performed_with_me[sp["event_occ_id"]].append(sp)
-    songs_performed_with_me = sorted(
-        [[k, v] for k, v in songs_performed_with_me.items()],
-        key=lambda x: x[1][0]["event_occ_id"]
-    )        
-    person["songs_performed_with_me"] = songs_performed_with_me
-
-    return my_render_template(resolver, page_name, person=person)
+    return my_render_template(g_session, page_name, person=person)
 
 
 @app.route("/detail-venue/<string:venue_id>")
 def detail_venue(venue_id):
     page_name = "detail_venue"
-    resolver = init_resolver()
-    venue = resolver.get_denormalized_venue_df().loc[venue_id].to_dict()
-    return my_render_template(resolver, page_name, venue=venue)
+    g_session = init_graphene_session()
+    venue = g_session.execute(
+        """
+        query getVenue ($id: ID) {
+          venue (id: $id) {
+            venue, addressString, googleMapString, web
+            hostedEventSeries { id, name }
+          }
+        }
+        """,
+        variables={"id": venue_id}
+    ).data["venue"]
+
+    return my_render_template(g_session, page_name, venue=venue)
 
 
 
 
-# app.add_url_rule("/graphql", view_func=graphql_view, methods=["GET", "POST", "PUT", "DELETE"])
 
-
-# if __name__ == '__main__':
-#     app.run()

@@ -6,5 +6,56 @@
 {% block header %}{{ title }}{% endblock %}
 
 {% block content %}
-Nothing yet!
+
+  <div class="container">
+    <table class="table table-bordered table-striped">
+      <thead class="sticky_thead">
+        <tr>
+          <th>Song</th>
+          <th>Event</th>
+          <th>Performers</th>
+          <th>Videos</th>
+        </tr>
+      </thead>
+      <tbody id="myTable">
+        {% for summary in summaries %}
+          <tr>
+            <td>
+              <a href="{{ url_for('detail_performed_song', song_perform_id=summary['id']) }}" class="list-group-item">
+                {{ summary["songPerformName"]}}
+              </a>
+            </td>
+            <td>
+              <a href="{{ url_for('detail_event_occ', event_occ_id=summary['eventocc']['id']) }}" class="list-group-item">
+                {{ summary["eventocc"]["name"]}}
+              </a>
+            </td>
+
+            <td class="list-group">
+                {% for player in summary["players"] %}
+                  <a href="{{ url_for('detail_player', person_id=player['person']['id']) }}" class="list-group-item">
+                     {{ player["person"]["publicName"] }}<br/>
+                     {{ ", ".join(player["instrumentList"]) }}
+                  </a>
+                {% endfor %}
+            </td>
+
+            <td class="list-group">
+              {% for video in summary["performanceVideos"] %}    
+                {% if video.get('embeddableLink', '') != '' %}
+                  <iframe loading="lazy" height="100%" src="{{ video['embeddableLink'] }}"></iframe>
+                {% endif %}
+                <a href="{{ video['link'] }}" class="list-group-item">
+                  {{ video['link'] }}
+                </a>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+
+
 {% endblock %}

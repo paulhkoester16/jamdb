@@ -19,29 +19,31 @@
         {% for summary in summaries %}
           <tr>
             <td class="list-group">
-              {% if 'embed_link' in summary['video'] %}
-                <iframe loading="lazy" height="100%" src="{{ summary['video']['embed_link'] }}"></iframe>
+              {% if summary.get('embeddableLink', '') != '' %}
+                <iframe loading="lazy" height="100%" src="{{ summary['embeddableLink'] }}"></iframe>
               {% endif %}
-              <a href="{{ summary['video']['link'] }}" class="list-group-item">
-                {{ summary['video']['link'] }}
+              <a href="{{ summary['link'] }}" class="list-group-item">
+                {{ summary['link'] }}
               </a>
             </td>
             <td class="list-group">
-              <a href="{{ url_for('detail_performed_song', song_perform_id=summary['song_perform_id']) }}" class="list-group-item">
-                {{ summary['song'] }}
+              {% set perf = summary['songperform'] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=perf['id']) }}" class="list-group-item">
+                {{ perf['song']['song'] }}
               </a>
-              <a href="{{ url_for('detail_event_occ', event_occ_id=summary['event_occ_id']) }}" class="list-group-item">
-                {{ summary['event_occ'] }}<br/>
-                {{ summary['event_occ_date'] }}
+              <a href="{{ url_for('detail_event_occ', event_occ_id=perf['eventocc']['id']) }}" class="list-group-item">
+                {{ perf['eventocc']['name'] }}<br/>
+                {{ perf['eventocc']['date'] }}
               </a>
             </td>
             <td class="list-group">
-              {% for person in summary['players'] %}
-                <a href="{{ url_for('detail_player', person_id=person['person_id']) }}" class="list-group-item">
-                  {{ person['public_name'] }}; 
-                  {{ ", ".join(person['instruments']) }}
+              {% for person in perf['players'] %}
+                <a href="{{ url_for('detail_player', person_id=person['person']['id']) }}" class="list-group-item">
+                  {{ person['person']['publicName'] }}; 
+                  {{ ", ".join(person['instrumentList']) }}
                 </a>
               {% endfor %}
+                
             </td>
           </tr>
         {% endfor %}

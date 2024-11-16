@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% set public_name = person["public_name"] %}
-{% set title = song %}
+{% set public_name = person["publicName"] %}
+{% set title = public_name %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
@@ -13,34 +13,39 @@
         <div class="list-group">
           <a href="#" class="list-group-item">
             <h4>Full name</h4>
-            {{ person["full_name"] }}
+            {{ person["fullName"] }}
           </a>
           <a href="#" class="list-group-item">
             <h4>Public name</h4>
-            {{ person["public_name"] }}
+            {{ person["publicName"] }}
           </a>
         </div>
 
         {% if person["contacts"]|length > 0 %}
           <h3>Contact Informations</h3>
-          {% for contact_type, contact_links in person["contacts"].items() %}
-            {% if contact_links|length > 0 %}
+          {% for contact_type, contact_infos in person["public_contacts_by_type"].items() %}
+            {% if contact_infos|length > 0 %}
               <h4>{{ contact_type }}</h4>
               <div class="list-group">
-                {% for contact_link in contact_links %}
-                  <a href="{{ contact_link }}" class="list-group-item">
-                    {{ contact_link }}
-                  </a>
+                {% for contact in contact_infos %}
+                  {% if contact.get("link", "") != "" %}
+                    <a href="{{ contact['link'] }}" class="list-group-item">
+                      {{ contact['link'] }}
+                    </a>
+                  {% endif %}
+                  {% if contact.get("contactInfo", "") != "" %}
+                    {{ contact['contactType'] }}:  {{ contact['contactInfo'] }}
+                  {% endif %}                  
                 {% endfor %}
               </div>
             {% endif %}
           {% endfor %}
         {% endif %}
 
-        {% if person["instruments"]|length > 0 %}
+        {% if person["instrumentList"]|length > 0 %}
           <h3>Instruments played</h3>
           <div class="list-group">              
-            {% for inst in person["instruments"] %}
+            {% for inst in person["instrumentList"] %}
               <a href="#" class="list-group-item">              
                 {{ inst }}
               </a>
@@ -56,43 +61,42 @@
         
         <h3>Events I've seen {{ public_name }} at:</h3>
         <div class="list-group">
-          {% for event in person["event_occs"] %}
-            <a href="{{ url_for('detail_event_occ', event_occ_id=event['event_occ_id']) }}" class="list-group-item">
-              {{ event["event_occ"] }}
+          {% for event in person["eventsAttended"] %}
+            <a href="{{ url_for('detail_event_occ', event_occ_id=event['id']) }}" class="list-group-item">
+              {{ event["name"] }}
             </a>
           {% endfor %}
         </div>
       </div>
     </div>
 
-
     <div class="row">
       <div class="col-lg-6">
-        <h3>Songs I've played with {{ public_name }}: </h3>
-        <div class="list-group">          
-          {% for event_id, songs in person["songs_performed_with_me"] %}
-            {% for song in songs %}        
-              <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}"
-                 class="list-group-item">
-                {{ song["song"] }} (at {{ song["event_occ"] }})
+        {% if person.get("songsPerformedWith", [])|length  > 0 %}
+          <h3>Songs I've played with {{ public_name }}: </h3>
+          <div class="list-group">          
+            {% for song in person["songsPerformedWith"] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}"
+                  class="list-group-item">
+                {{ song["songPerformName"] }}
               </a>
             {% endfor %}
-          {% endfor %}
-        </div>
+          </div>              
+        {% endif %}
       </div>
 
       <div class="col-lg-6">
-        <h3>Other songs I've seen {{ public_name }} play:</h3>
-        <div class="list-group">          
-          {% for event_id, songs in person["songs_performed_without_me"] %}
-            {% for song in songs %}        
-              <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}"
-                 class="list-group-item">
-                {{ song["song"] }} (at {{ song["event_occ"] }})
+        {% if person.get("songsPerformedWithout", [])|length > 0 %}
+          <h3>Other songs I've seen {{ public_name }} play:</h3>
+          <div class="list-group">          
+            {% for song in person["songsPerformedWithout"] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}"
+                   class="list-group-item">
+                {{ song["songPerformName"] }}
               </a>
             {% endfor %}
-          {% endfor %}
-        </div>
+          </div>
+        {% endif %}
       </div>        
 
     </div>
