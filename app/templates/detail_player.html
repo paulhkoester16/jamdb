@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% set public_name = person["publicName"] %}
+{% set title = public_name %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">  
+      <div class="col-lg-6">
+        <div class="list-group">
+          <a href="#" class="list-group-item">
+            <h4>Full name</h4>
+            {{ person["fullName"] }}
+          </a>
+          <a href="#" class="list-group-item">
+            <h4>Public name</h4>
+            {{ person["publicName"] }}
+          </a>
+        </div>
+
+        {% if person["contacts"]|length > 0 %}
+          <h3>Contact Informations</h3>
+          {% for contact_type, contact_infos in person["public_contacts_by_type"].items() %}
+            {% if contact_infos|length > 0 %}
+              <h4>{{ contact_type }}</h4>
+              <div class="list-group">
+                {% for contact in contact_infos %}
+                  {% if contact.get("link", "") != "" %}
+                    <a href="{{ contact['link'] }}" class="list-group-item">
+                      {{ contact['link'] }}
+                    </a>
+                  {% endif %}
+                  {% if contact.get("contactInfo", "") != "" %}
+                    {{ contact['contactType'] }}:  {{ contact['contactInfo'] }}
+                  {% endif %}                  
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if person["instrumentList"]|length > 0 %}
+          <h3>Instruments played</h3>
+          <div class="list-group">              
+            {% for inst in person["instrumentList"] %}
+              <a href="#" class="list-group-item">              
+                {{ inst }}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+          
+      </div>
+      <div class="col-lg-6">
+        {% for img_link in person["pictures"] %}
+          <img src="{{ img_link }}" class="img-fluid" alt="Pic of {{ public_name }}">
+        {% endfor %}
+        
+        <h3>Events I've seen {{ public_name }} at:</h3>
+        <div class="list-group">
+          {% for event in person["eventsAttended"] %}
+            <a href="{{ url_for('detail_event_occ', event_occ_id=event['id']) }}" class="list-group-item">
+              {{ event["name"] }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6">
+        {% if person.get("songsPerformedWith", [])|length  > 0 %}
+          <h3>Songs I've played with {{ public_name }}: </h3>
+          <div class="list-group">          
+            {% for song in person["songsPerformedWith"] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}"
+                  class="list-group-item">
+                {{ song["songPerformName"] }}
+              </a>
+            {% endfor %}
+          </div>              
+        {% endif %}
+      </div>
+
+      <div class="col-lg-6">
+        {% if person.get("songsPerformedWithout", [])|length > 0 %}
+          <h3>Other songs I've seen {{ public_name }} play:</h3>
+          <div class="list-group">          
+            {% for song in person["songsPerformedWithout"] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}"
+                   class="list-group-item">
+                {{ song["songPerformName"] }}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>        
+
+    </div>
+  </div>
+{% endblock %}

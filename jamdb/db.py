@@ -155,7 +155,7 @@ class BackendSQLite(Backend):
     def _connect(self, db_file=None):
         if db_file is None:
             db_file = self.db_file
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(db_file, check_same_thread=False)
         if self._enforce_fks:
             # I still can't believe that this can't be set permanently when initing db.
             cursor = conn.cursor()

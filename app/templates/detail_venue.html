@@ -12,17 +12,17 @@
       <div class="col-lg-6">
         <h3>Hosted events / series</h3>
         <div class="list-group">
-          {% for event in venue["event_gens"] %}
-            <a href="{{ url_for('detail_event_series', event_gen_id=event['event_gen_id']) }}" class="list-group-item">
-                {{ event['event_gen'] }}
+          {% for event in venue["hostedEventSeries"] %}
+            <a href="{{ url_for('detail_event_series', event_gen_id=event['id']) }}" class="list-group-item">
+                {{ event['name'] }}
             </a>
           {% endfor %}
         </div>
       </div>
       <div class="col-lg-6">
-        <a href="{{ venue['google_map_string'] }}" class="list-group-item">
+        <a href="{{ venue['googleMapString'] }}" class="list-group-item">
           <h4>Address</h4>
-          {{ venue["address_string"] }}
+          {{ venue["addressString"] }}
         </a>
         <a href="{{ venue['web'] }}" class="list-group-item">
           <h4>Web</h4>

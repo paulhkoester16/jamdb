@@ -93,6 +93,7 @@ CREATE TABLE Contact (
 	contact_type	TEXT	NOT NULL,
 	contact_info	TEXT	DEFAULT "",
 	link	TEXT	DEFAULT "",
+    private	BOOLEAN	DEFAULT 1,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (person_id) REFERENCES Person (id)
 );
@@ -477,6 +478,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Contact", "contact_type", "The kind of contact, e.g., Facebook vs YouTube etc."),
 	("Contact", "contact_info", "Free form text contact info, like phone numbers, etc."),
 	("Contact", "link", "Hyperlink, e.g., for Facebook etc."),
+	("Contact", "private", "Whether the contact info should remain private"),
 	("EventGen", "id", "Unique ID for EventGen."),
 	("EventGen", "name", "Name of EventGen, e.g., 'Jazz Madcats'"),
 	("EventGen", "genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),

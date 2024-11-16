@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% set event_gen = event["event_gen"] %}
-{% set title = event_gen %}
+{% set name = event["name"] %}
+{% set title = name %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
@@ -13,25 +13,25 @@
         <div class="list-group">
           <a href="#" class="list-group-item">
             <h4>Event Series</h4>
-            {{ event_gen }}
+            {{ name }}
           </a>
           <a href="#" class="list-group-item">
             <h4>Event Genre</h4>
-            {{ event["event_genre"] }}
+            {{ event["genre"]["genre"] }}
           </a>
           <a href="#" class="list-group-item">
             <h4>Date / time</h4>
-            {{ event["event_gen_date"] }} </br>
-            {{ event["event_gen_time"] }}
+            {{ event["date"] }} </br>
+            {{ event["time"] }}
           </a>
-          <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}" class="list-group-item">
+          <a href="{{ url_for('detail_venue', venue_id=event['venue']['id']) }}" class="list-group-item">
             <h4>Venue</h4>
-            {{ event["venue_name"] }}
+            {{ event["venue"]["venue"] }}
           </a>
-          {% if event["host_id"] != "unknown_host" %}
-            <a href="{{ url_for('detail_player', person_id=event['host_id']) }}" class="list-group-item">
+          {% if event["host"]["id"] != "unknown_host" %}
+            <a href="{{ url_for('detail_player', person_id=event['host']['id']) }}" class="list-group-item">
               <h4>Host</h4>
-              {{ event["host_public_name"] }}
+              {{ event["host"]["publicName"] }}
             </a>
           {% endif %}
         </div>
@@ -39,9 +39,9 @@
       <div class="col-lg-6">
         <h3>Instances that I've attended</h3>
         <div class="list-group">
-          {% for occ in event["event_occs"] %}
-            <a href="{{ url_for('detail_event_occ', event_occ_id=occ['event_occ_id']) }}" class="list-group-item">
-              {{ occ['event_occ'] }}
+          {% for occ in event["eventOccs"] %}
+            <a href="{{ url_for('detail_event_occ', event_occ_id=occ['id']) }}" class="list-group-item">
+              {{ occ['name'] }}
             </a>
           {% endfor %}
         </div>

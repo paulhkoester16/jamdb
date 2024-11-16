@@ -20,24 +20,24 @@
         {% for summary in summaries %}
           <tr>
             <td>
-              <a href="{{ url_for('detail_song', song_id=summary['song_id']) }}" class="list-group-item">
+              <a href="{{ url_for('detail_song', song_id=summary['id']) }}" class="list-group-item">
                 {{ summary["song"]}}
               </a>
             </td>
             <td>
-              {% if summary['key'] != "" %} 
-              {{ summary['key'] }}
+              {% if summary['key'] is not none and summary.get('key', '') != "" %} 
+                {{ summary['key']['keyName'] }}
               {% endif %}              
             </td>
             <td>
-              {% if summary['genre'] != "" %}
-              {{ summary['genre'] }}
+              {% if summary['subgenre'] is not none and summary.get('subgenre', '') != "" %}
+              {{ summary['subgenre']['subgenreName'] }}
               {% endif %}
             </td>
             <td class="list-group">
-                {% for song in summary["song_performs"] %}
-                  <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
-                      Performed at {{ song["event_occ"] }}
+                {% for perf in summary["songPerforms"] %}
+                  <a href="{{ url_for('detail_performed_song', song_perform_id=perf['id']) }}" class="list-group-item">
+                      Performed at {{ perf["eventocc"]["name"] }}
                   </a>
                 {% endfor %}
             </td>

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% set song_name = song["song"] %}
-{% set title = song_name %}
+{% set name = song["song"] %}
+{% set title = name %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
@@ -13,31 +13,31 @@
         <div class="list-group">
           <a href="#" class="list-group-item">
             <h4>Song</h4>
-            {{ song_name }}
+            {{ name }}
           </a>
 
-          {% if song['key'] != "" %} 
+          {% if song['key'] is not none and song['key']['keyName'] != "" %}
             <a href="#" class="list-group-item">
               <h4>Typical key</h4>
-              {{ song["key"] }}
+              {{ song['key']['keyName'] }}
             </a>
           {% endif %}
 
-          {% if song['genre'] != "" %}
+          {% if song['subgenre'] is not none and song['subgenre']['subgenreName'] != "" %}
             <a href="#" class="list-group-item">
               <h4>Genre</h4>
-              {{ song["genre"] }}
+              {{ song['subgenre']['subgenreName'] }}
             </a>
           {% endif %}
         </div>
 
-        {% if song.get('song_performs', []) != [] %}
+        {% if song.get('songPerforms', []) != [] %}
           <h3>Performances</h3>
           <div>
-            {% for perf in song['song_performs'] %}
-              <a href="{{ url_for('detail_performed_song', song_perform_id=perf['song_perform_id']) }}"
+            {% for perf in song['songPerforms'] %}
+              <a href="{{ url_for('detail_performed_song', song_perform_id=perf['id']) }}"
                 class="list-group-item">
-                Performed at {{ perf['event_occ'] }}
+                Performed at {{ perf['eventocc']['name'] }}
               </a>
             {% endfor %}
           </div>
@@ -49,8 +49,8 @@
           <div>
             <h3>Charts</h3>
             {% for chart in song['charts'] %}
-              {% if 'embed_link' in chart %}
-                <iframe height="100%" src="{{ chart['embed_link'] }}"></iframe>
+              {% if chart.get('embeddableLink', '') != '' %}
+                <iframe height="100%" src="{{ chart['embeddableLink'] }}"></iframe>
               {% endif %}
               <a href="{{ chart['link'] }}" class="list-group-item">
                 {{ chart['link'] }}
@@ -61,12 +61,12 @@
       </div>
 
       <div class="col-lg-4">
-        {% if song.get('reference_recordings', []) != [] %}
+        {% if song.get('refRecs', []) != [] %}
           <div>
             <h3>Reference Recordings</h3>          
-            {% for video in song['reference_recordings'] %}
-              {% if 'embed_link' in video %}
-                <iframe style="border-radius:12px" src="{{ video['embed_link'] }}" width="100%" height="250" frameBorder="0"
+            {% for video in song['refRecs'] %}
+              {% if video.get('embeddableLink', '') != ''  %}
+                <iframe style="border-radius:12px" src="{{ video['embeddableLink'] }}" width="100%" height="250" frameBorder="0"
                     allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
               {% endif %}
               <a href="{{ video['link'] }}" class="list-group-item">

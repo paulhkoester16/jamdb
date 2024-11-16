@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% set event_occ = event["event_occ"] %}
-{% set title = event_occ %}
+{% set name = event["name"] %}
+{% set title = name %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block header %}{{ title }}{% endblock %}
@@ -13,27 +13,27 @@
         <div class="list-group">
           <a href="#" class="list-group-item">
             <h4>Event</h4>
-            {{ event_occ }}
+            {{ name }}
           </a>
           <a href="#" class="list-group-item">
             <h4>Date</h4>
-            {{ event["event_occ_date"] }}
+            {{ event["date"] }}
           </a>
-          <a href="{{ url_for('detail_event_series', event_gen_id=event['event_gen_id']) }}" class="list-group-item">
+          <a href="{{ url_for('detail_event_series', event_gen_id=event['eventgen']['id']) }}" class="list-group-item">
             <h4>Event Series</h4>
-            {{ event["event_gen"] }}
+            {{ event["eventgen"]["name"] }}
           </a>
-          <a href="{{ url_for('detail_venue', venue_id=event['venue_id']) }}" class="list-group-item">
+          <a href="{{ url_for('detail_venue', venue_id=event['eventgen']['venue']['id']) }}" class="list-group-item">
             <h4>Venue</h4>              
-            {{ event["venue_name"] }}
+            {{ event["eventgen"]["venue"]["venue"] }}
           </a>
         </div>
 
         <h3>Songs performed</h3>
         <div class="list-group">
-          {% for song in event["songs"] %}
-            <a href="{{ url_for('detail_performed_song', song_perform_id=song['song_perform_id']) }}" class="list-group-item">
-              {{ song["song"] }}
+          {% for song in event["songPerforms"] %}
+            <a href="{{ url_for('detail_performed_song', song_perform_id=song['id']) }}" class="list-group-item">
+              {{ song["song"]["song"] }}
             </a>
           {% endfor %}
         </div>
@@ -42,11 +42,11 @@
       <div class="col-lg-6">       
         <h3>Attendees</h3>
         <div class="list-group">
-          {% for person in event["players"] %}
-            <a href="{{ url_for('detail_player', person_id=person['person_id']) }}" class="list-group-item">
-              {{ person["public_name"] }}
+          {% for player in event["players"] %}
+            <a href="{{ url_for('detail_player', person_id=player['person']['id']) }}" class="list-group-item">
+              {{ player["person"]["publicName"] }}
               <ul>
-                {% for inst in person["instruments"] %}
+                {% for inst in player["instrumentList"] %}
                   <li>{{ inst }}</li>
                 {% endfor %}
               </ul>
@@ -54,7 +54,7 @@
           {% endfor %}
       </div>
     </div>
-
+        
     </div>
   </div>
 {% endblock %}
