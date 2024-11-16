@@ -10,146 +10,8 @@ def init_graphene_session():
     return GrapheneSQLSession.from_sqlite_file()
 
 
-def get_index(graphene_session):
-    result = graphene_session.execute("""query {
-        eventGens { id, name }
-        eventOccs { id, name }
-        songPerforms { id, songPerformName }
-        persons { id, publicName }
-        songs { id, song }
-        venues { id, venue }
-    }""").data
-    result = {k: [list(r.values()) for r in v] for k, v in result.items()}
-
-    
-    index = {
-        "Series": {
-            "overview": {
-                "nav_page": "overview_event_series"
-            },
-            "detail": {
-                "nav_page": "detail_event_series",
-                "id": "event_gen_id",
-                "rows": result["eventGens"]
-            }
-        },
-        "Events": {
-            "overview": {
-                "nav_page": "overview_event_occs"
-            },
-            "detail": {
-                "nav_page": "detail_event_occ",
-                "id": "event_occ_id",
-                "rows": result["eventOccs"]
-            }
-        },
-        "Performed Songs": {
-            "overview": {
-                "nav_page": "overview_performed_songs"
-            },
-            "detail": {
-                "nav_page": "detail_performed_song", 
-                "id": "song_perform_id",
-                "rows": result["songPerforms"]
-            }
-        },
-        "Players": {
-            "overview": {
-                "nav_page": "overview_players"
-            },        
-            "detail": {
-                "nav_page": "detail_player",
-                "id": "person_id",
-                "rows": result["persons"]
-            }
-        },
-        "Songs": {
-            "overview": {
-                "nav_page": "overview_songs"
-            },
-            "detail": {
-                "nav_page": "detail_song",
-                "id": "song_id",
-                "rows": result["songs"]
-            }
-        },
-        "Venues": {
-            "detail": {
-                "nav_page": "detail_venue",
-                "id": "venue_id",
-                "rows": result["venues"]
-            }
-        },
-        "Videos": {
-            "overview": {
-                "nav_page": "overview_performance_videos"
-            }
-        }    
-    }
-
-    for item in index.values():
-        if "detail" in item:
-            item["detail"]["rows"] = [
-                [
-                    {
-                        item["detail"]["id"]: x[0]
-                    },
-                    x[1]
-                ] for x in item["detail"]["rows"]
-            ]
-
-    index = {k: {"pages": v} for k, v in index.items()}
-    for display_name, v in index.items():
-        v["nav_pages"] = [x["nav_page"] for x in v["pages"].values()]
-        if "detail" in v["pages"]:
-            detail = v["pages"]["detail"]
-            dropdown = []
-            if "overview" in v["pages"]:
-                overview = v["pages"]["overview"]
-                dropdown.append(
-                    {
-                        "type": "header",
-                        "header_name": "Overview"
-                    }
-                )
-                dropdown.append(
-                    {
-                        "type": "ref",
-                        "nav_page": overview["nav_page"],
-                        "nav_kwargs": {},
-                        "nav_display": f"Overview {display_name}"
-                    }
-                )
-                dropdown.append(
-                    {
-                        "type": "header",
-                        "header_name": "Detail view"
-                    }
-                )
-            for row in detail["rows"]:
-                dropdown.append(
-                    {
-                        "type": "ref",
-                        "nav_page": detail["nav_page"],
-                        "nav_kwargs": row[0],
-                        "nav_display": row[1]
-                    }
-                )
-            v["dropdown"] = dropdown
-        else:
-            overview = v["pages"]["overview"]
-            v["non_dropdown"] = [
-                {
-                    "type": "ref",
-                    "nav_page": overview["nav_page"],
-                    "nav_display": display_name
-                }
-            ]
-    return index
-
-
 def my_render_template(graphene_session, page_name, **kwargs):
-    index = get_index(graphene_session)
+    index = _create_index(graphene_session)
     nav_page_has_my_table = {
         entity["pages"]["overview"]["nav_page"]
         for entity in index.values()
@@ -402,4 +264,139 @@ def detail_venue(venue_id):
 
 
 
+def _create_index(graphene_session):
+    result = graphene_session.execute("""query {
+        eventGens { id, name }
+        eventOccs { id, name }
+        songPerforms { id, songPerformName }
+        persons { id, publicName }
+        songs { id, song }
+        venues { id, venue }
+    }""").data
+    result = {k: [list(r.values()) for r in v] for k, v in result.items()}
 
+    
+    index = {
+        "Series": {
+            "overview": {
+                "nav_page": "overview_event_series"
+            },
+            "detail": {
+                "nav_page": "detail_event_series",
+                "id": "event_gen_id",
+                "rows": result["eventGens"]
+            }
+        },
+        "Events": {
+            "overview": {
+                "nav_page": "overview_event_occs"
+            },
+            "detail": {
+                "nav_page": "detail_event_occ",
+                "id": "event_occ_id",
+                "rows": result["eventOccs"]
+            }
+        },
+        "Performed Songs": {
+            "overview": {
+                "nav_page": "overview_performed_songs"
+            },
+            "detail": {
+                "nav_page": "detail_performed_song", 
+                "id": "song_perform_id",
+                "rows": result["songPerforms"]
+            }
+        },
+        "Players": {
+            "overview": {
+                "nav_page": "overview_players"
+            },        
+            "detail": {
+                "nav_page": "detail_player",
+                "id": "person_id",
+                "rows": result["persons"]
+            }
+        },
+        "Songs": {
+            "overview": {
+                "nav_page": "overview_songs"
+            },
+            "detail": {
+                "nav_page": "detail_song",
+                "id": "song_id",
+                "rows": result["songs"]
+            }
+        },
+        "Venues": {
+            "detail": {
+                "nav_page": "detail_venue",
+                "id": "venue_id",
+                "rows": result["venues"]
+            }
+        },
+        "Videos": {
+            "overview": {
+                "nav_page": "overview_performance_videos"
+            }
+        }    
+    }
+
+    for item in index.values():
+        if "detail" in item:
+            item["detail"]["rows"] = [
+                [
+                    {
+                        item["detail"]["id"]: x[0]
+                    },
+                    x[1]
+                ] for x in item["detail"]["rows"]
+            ]
+
+    index = {k: {"pages": v} for k, v in index.items()}
+    for display_name, v in index.items():
+        v["nav_pages"] = [x["nav_page"] for x in v["pages"].values()]
+        if "detail" in v["pages"]:
+            detail = v["pages"]["detail"]
+            dropdown = []
+            if "overview" in v["pages"]:
+                overview = v["pages"]["overview"]
+                dropdown.append(
+                    {
+                        "type": "header",
+                        "header_name": "Overview"
+                    }
+                )
+                dropdown.append(
+                    {
+                        "type": "ref",
+                        "nav_page": overview["nav_page"],
+                        "nav_kwargs": {},
+                        "nav_display": f"Overview {display_name}"
+                    }
+                )
+                dropdown.append(
+                    {
+                        "type": "header",
+                        "header_name": "Detail view"
+                    }
+                )
+            for row in detail["rows"]:
+                dropdown.append(
+                    {
+                        "type": "ref",
+                        "nav_page": detail["nav_page"],
+                        "nav_kwargs": row[0],
+                        "nav_display": row[1]
+                    }
+                )
+            v["dropdown"] = dropdown
+        else:
+            overview = v["pages"]["overview"]
+            v["non_dropdown"] = [
+                {
+                    "type": "ref",
+                    "nav_page": overview["nav_page"],
+                    "nav_display": display_name
+                }
+            ]
+    return index

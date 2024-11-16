@@ -15,7 +15,7 @@ from jamdb.db import init_db, BackendSQLite
 
 
 SQL_FILE = "jamdb/jamming.sql"
-OLD_DATA_DIR = REPO_ROOT.parent / "jamming_db/data/paul_k_db/"
+SRC_DATA_DIR = REPO_ROOT / "data" / "source_data" 
 
 def insert_to_table(db_handler, table, table_name):
     for _, row in table.iterrows():
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         init_db(SQL_FILE, data_dir=data_dir, db_file=db_file)
         db_handler = BackendSQLite(data_dir=data_dir, db_file=db_file)
 
-        ods_file = OLD_DATA_DIR / "public.ods"
+        ods_file = SRC_DATA_DIR / "public.ods"
 
         for table_name in db_handler._sorted_tables():
             if table_name in ["PerformanceVideo", "SongPerformer"]:

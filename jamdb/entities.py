@@ -1,3 +1,6 @@
+# TODO -- Delete me?
+#     This is only used by `db.py`, and that file will likely go extinct soon.
+
 import hashlib
 
 import pandas as pd
@@ -195,55 +198,3 @@ def entity_factory(columns, primary_key, entity_class_name="Entity") -> Entity:
         table_name=entity_class_name, columns=columns, primary_key=primary_key
     )
     return entity
-
-
-class FieldInsertError(Exception):
-    pass
-
-
-class Field:
-
-    # Unique will be difficult to enforce here, as UNIQUE constraint may apply to multiple fields
-    def __init__(
-        self,
-        table_name,
-        field_name,
-        required=False,
-        unique=False,
-        allowed_values=None,
-        default=None,
-        current_values=None,
-    ):
-        self.table_name = table_name
-        self.field_name = field_name
-        self.required = required
-        self.default = default
-        self.allowed_values = allowed_values
-        if unique and current_values is None:
-            msg = f"current_values list must be provided if requiring unique."
-            raise ValueError(msg)
-        self.unique = unique
-        self.current_values = current_values
-
-    @property
-    def name(self):
-        return f"{self.table_name}.{self.field_name}"
-
-    def validate_insert(self, value=None):
-        if value is None:
-            value = self.default
-        if value is None and self.required:
-            msg = f"A value is required for {self.name}."
-            raise FieldInsertError(msg)
-
-        if self.unique and value is not None:
-            if value in self.current_values:
-                msg = f"{value=} is already taken in {self.name}"
-                raise FieldInsertError(msg)
-
-        # do we want to perform some kind of cleaning/normalization on value?
-        if self.allowed_values is not None and value is not None:
-            if value not in self.allowed_values:
-                msg = f"{value=} is not an allowed value for {self.name}."
-                raise FieldInsertError(msg)
-        return value
