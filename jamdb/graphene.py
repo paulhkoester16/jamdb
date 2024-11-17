@@ -29,29 +29,6 @@ def _automap_sqlalchemy_models(sqlalchemy_engine):
         
 def _create_qraphene_objects(model_classes):
     # step 2
-    # TODO -- this could benefit from some "meta-programming"
-    #      For each key, value we create class
-    #
-    # ```
-    # @register_gql("{snake_case(key)}"):
-    # class {key}GQL(SQLAlchemyObjectType):
-    #     class Meta:
-    #         model = {value}
-    # ```
-    #
-    # Further, if `{item}_collection` is in `{key}`'s table/metadata then we add attr
-    # ```
-    #     {snake_case(item)}s = graphen.List(lambda: CamelCase(item)GQL)
-    # ```
-    # and resolver 
-    # ```
-    #     def resolve_{snake_case(item)}s(root, info):
-    #         return root.{item}_collection
-    # ```
-    # 
-    # If we can create a derived class of SQLAlchemyObjectType or some meta class or factory
-    # then we should be able to get rid of LOTs of boiler plate and only need direct code in 
-    # a few places like `def resolve_google_map_string(root, info)` in `Venue`
     
     _REGISTRY = {}
 
@@ -60,6 +37,25 @@ def _create_qraphene_objects(model_classes):
             _REGISTRY[name] = cls
             return cls
         return __inner_factory_function
+
+    def add_for_collections(field_name, cls_fnc, collection_name=None):
+        # SQLAlchemyObjectType automatically adds {x}_collection field when refered via FK
+        # But the name is not always sensible, so for any such collection, we add
+        # field and resolver
+        if collection_name is None:
+            collection_name = field_name[:-1].replace("_", "")
+
+        def _factory_resolver(collection_name):
+            def inner_func(root, info):
+                return getattr(root, f"{collection_name}_collection")
+            return inner_func
+
+        def inner_function(cls):
+            cls._meta.fields[field_name] = graphene.Field(graphene.List(cls_fnc))
+            setattr(cls, f"resolve_{field_name}", _factory_resolver(collection_name))        
+            return cls
+    
+        return inner_function
 
 
     def _personinstruments_to_instruments(personinstruments):
@@ -91,15 +87,11 @@ def _create_qraphene_objects(model_classes):
             return create_embed_link(root.source, root.link)
 
     
-    @register_gql("composer") 
+    @register_gql("composer")
+    @add_for_collections("songs", lambda: SongGQL)
     class ComposerGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Composer"]
-    
-        songs = graphene.List(lambda: SongGQL)
-        
-        def resolve_songs(root, info):
-            return root.song_collection
 
     
     @register_gql("contact")
@@ -109,28 +101,21 @@ def _create_qraphene_objects(model_classes):
     
 
     @register_gql("event_gen")
+    @add_for_collections("event_occs", lambda: EventOccGQL)
     class EventGenGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["EventGen"]
-    
-        event_occs = graphene.List(lambda: EventOccGQL)
-    
-        def resolve_event_occs(root, info):
-            return root.eventocc_collection
 
     
     @register_gql("event_occ")
+    @add_for_collections("song_performs", lambda: SongPerformGQL)
     class EventOccGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["EventOcc"]
     
-        song_performs = graphene.List(lambda: SongPerformGQL)
         venue = graphene.Field(lambda: VenueGQL)
         players = graphene.List(lambda: PlayerGQL)
         
-        def resolve_song_performs(root, info):
-            return root.songperform_collection
-
         def resolve_venue(root, info):
             return root.eventgen.venue
 
@@ -159,36 +144,26 @@ def _create_qraphene_objects(model_classes):
 
     
     @register_gql("genre")
+    @add_for_collections("event_gens", lambda: EventGenGQL)
+    @add_for_collections("subgenres", lambda: SubgenreGQL)
     class GenreGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Genre"]
 
-        event_gens = graphene.List(lambda: EventGenGQL)
-        subgenres = graphene.List(lambda: SubgenreGQL)
-    
-        def resolve_event_gens(root, info):
-            return root.eventgen_collection
-    
-        def resolve_subgenres(root, info):
-            return root.subgenre_collection
-    
 
     @register_gql("instrument")
+    @add_for_collections("person_instruments", lambda: PersonInstrumentGQL)
+    @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
     class InstrumentGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Instrument"]
     
-        person_instruments = graphene.List(lambda: PersonInstrumentGQL)
-        setlist_songs = graphene.List(lambda: SetlistSongGQL)
-    
-        def resolve_person_instruments(root, info):
-            return root.personinstrument_collection
-    
-        def resolve_setlist_songs(root, info):
-            return root.setlistsongs_collection
-    
 
     @register_gql("key")
+    @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
+    @add_for_collections("songs", lambda: SongGQL)
+    @add_for_collections("song_learns", lambda: SongLearnGQL, "songlearns")
+    @add_for_collections("song_performs", lambda: SongPerformGQL)
     class KeyGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Key"]
@@ -197,26 +172,10 @@ def _create_qraphene_objects(model_classes):
     
         def resolve_key_name(root, info):
             return f"{root.root} {root.mode.mode}"
-    
-        setlist_songs = graphene.List(lambda: SetlistSongGQL)
-        songs = graphene.List(lambda: SongGQL)
-        song_learns = graphene.List(lambda: SongLearnGQL)
-        song_performs = graphene.List(lambda: SongPerformGQL)
-    
-        def resolve_setlist_songs(root, info):
-            return root.setlistsongs_collection
-    
-        def resolve_songs(root, info):
-            return root.song_collection
-    
-        def resolve_song_learns(root, info):
-            return root.songlearn_collection
-    
-        def resolve_song_performs(root, info):
-            return root.songperform_collection
-    
+
 
     @register_gql("mode")
+    @add_for_collections("keys", lambda: KeyGQL)
     class ModeGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Mode"]
@@ -238,13 +197,13 @@ def _create_qraphene_objects(model_classes):
             return create_embed_link(root.source, root.link)
 
     @register_gql("person")
+    @add_for_collections("contacts", lambda: ContactGQL)
+    @add_for_collections("event_gens", lambda: EventGenGQL)
+    @add_for_collections("person_instruments", lambda: PersonInstrumentGQL)
     class PersonGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Person"]
     
-        contacts = graphene.List(lambda: ContactGQL)
-        event_gens = graphene.List(lambda: EventGenGQL)
-        person_instruments = graphene.List(lambda: PersonInstrumentGQL)
         instruments = graphene.List(lambda: InstrumentGQL)
         instrument_list = graphene.List(graphene.String)
         combined_name = graphene.String()
@@ -259,15 +218,6 @@ def _create_qraphene_objects(model_classes):
             graphene.List(lambda: SongPerformGQL),
             other_person_id=graphene.ID()
         )
-
-        def resolve_contacts(root, info):
-            return root.contact_collection
-    
-        def resolve_event_gens(root, info):
-            return root.eventgen_collection
-    
-        def resolve_person_instruments(root, info):
-            return root.personinstrument_collection
 
         def resolve_combined_name(root, info):
             result = root.public_name
@@ -325,18 +275,16 @@ def _create_qraphene_objects(model_classes):
                     without_other.append(song)
             return without_other
 
+
     @register_gql("person_instrument")
+    @add_for_collections("song_performers", lambda: SongPerformerGQL)
     class PersonInstrumentGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["PersonInstrument"]
     
-        song_performers = graphene.List(lambda: SongPerformerGQL)
         song_performs = graphene.List(lambda: SongPerformGQL)
         events_attended = graphene.List(lambda: EventOccGQL)
         
-        def resolve_song_performers(root, info):
-            return root.songperformer_collection
-
         def resolve_song_performs(root, info):
             return [x.songperform for x in root.songperformer_collection]
 
@@ -360,14 +308,10 @@ def _create_qraphene_objects(model_classes):
     
 
     @register_gql("setlist")
+    @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
     class SetlistGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Setlist"]
-    
-        setlist_songs = graphene.List(lambda: SetlistSongGQL)
-    
-        def resolve_setlist_songs(root, info):
-            return root.setlistsongs_collection
 
 
     @register_gql("setlist_song")
@@ -377,30 +321,14 @@ def _create_qraphene_objects(model_classes):
     
 
     @register_gql("song")
+    @add_for_collections("charts", lambda: ChartGQL, "charts")
+    @add_for_collections("ref_recs", lambda: RefRecGQL, "refrecs")
+    @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
+    @add_for_collections("song_learns", lambda: SongLearnGQL, "songlearns")
+    @add_for_collections("song_performs", lambda: SongPerformGQL)
     class SongGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Song"]
-    
-        charts = graphene.List(lambda: ChartGQL)
-        ref_recs = graphene.List(lambda: RefRecGQL)
-        setlist_songs = graphene.List(lambda: SetlistSongGQL)
-        song_learns = graphene.List(lambda: SongLearnGQL)
-        song_performs = graphene.List(lambda: SongPerformGQL)
-    
-        def resolve_charts(root, info):
-            return root.charts_collection
-    
-        def resolve_ref_recs(root, info):
-            return root.refrecs_collection
-    
-        def resolve_setlist_songs(root, info):
-            return root.setlistsongs_collection
-        
-        def resolve_song_learns(root, info):
-            return root.songlearns_collection
-    
-        def resolve_song_performs(root, info):
-            return root.songperform_collection
 
 
     @register_gql("song_learn")
@@ -410,20 +338,14 @@ def _create_qraphene_objects(model_classes):
 
 
     @register_gql("song_perform")
+    @add_for_collections("performance_videos", lambda: PerformanceVideoGQL)
+    @add_for_collections("song_performers", lambda: SongPerformerGQL)
     class SongPerformGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["SongPerform"]
     
-        performance_videos = graphene.List(lambda: PerformanceVideoGQL)
-        song_performers = graphene.List(lambda: SongPerformerGQL)
         song_perform_name = graphene.String()
         players = graphene.List(lambda: PlayerGQL)
-        
-        def resolve_performance_videos(root, info):
-            return root.performancevideo_collection
-    
-        def resolve_song_performers(root, info):
-            return root.songperformer_collection
 
         def resolve_song_perform_name(root, info):
             return f"{root.song.song} ({root.eventocc.name})"
@@ -457,12 +379,12 @@ def _create_qraphene_objects(model_classes):
 
 
     @register_gql("subgenre")
+    @add_for_collections("songs", lambda: SongGQL)
     class SubgenreGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Subgenre"]
     
         subgenre_name = graphene.String()
-        songs = graphene.List(lambda: SongGQL)
     
         def resolve_subgenre_name(root, info):
             genre = root.genre.genre
@@ -472,20 +394,16 @@ def _create_qraphene_objects(model_classes):
                 output += ": " + sub
             return output
     
-        def resolve_songs(root, info):
-            return root.song_collection    
-    
 
     @register_gql("venue")
+    @add_for_collections("hosted_event_series", lambda: EventGenGQL, "eventgen")
     class VenueGQL(SQLAlchemyObjectType):
-    
         class Meta:
             model = model_classes["Venue"]
     
         zip = graphene.Int()
         address_string = graphene.String()
         google_map_string = graphene.String()
-        hosted_event_series = graphene.List(lambda: EventGenGQL)
     
         def resolve_zip(root, info):
             return format_id_as_str(root.zip)
@@ -496,9 +414,6 @@ def _create_qraphene_objects(model_classes):
         def resolve_google_map_string(root, info):
             address_string = VenueGQL.resolve_address_string(root, info)
             return f"https://www.google.com/maps/place/{address_string}".replace(" ", "+")
-        
-        def resolve_hosted_event_series(root, info):
-            return root.eventgen_collection
 
     return _REGISTRY
 
