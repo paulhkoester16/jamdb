@@ -15,16 +15,6 @@ def _automap_sqlalchemy_models(sqlalchemy_engine):
     
     model_classes = dict(AutomappedBase.classes)
 
-    # TODO -- fix these names in the underlying DB
-    if "Charts" in model_classes:
-        model_classes["Chart"] = model_classes.pop("Charts")
-    if "SubGenre" in model_classes:
-        model_classes["Subgenre"] = model_classes.pop("SubGenre")
-    if "RefRecs" in model_classes:
-        model_classes["RefRec"] = model_classes.pop("RefRecs")
-    if "SetlistSongs" in model_classes:
-        model_classes["SetlistSong"] = model_classes.pop("SetlistSongs")
-
     return model_classes
         
 def _create_qraphene_objects(model_classes):
@@ -162,7 +152,7 @@ def _create_qraphene_objects(model_classes):
     @register_gql("key")
     @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
     @add_for_collections("songs", lambda: SongGQL)
-    @add_for_collections("song_learns", lambda: SongLearnGQL, "songlearns")
+    @add_for_collections("song_learns", lambda: SongLearnGQL)
     @add_for_collections("song_performs", lambda: SongPerformGQL)
     class KeyGQL(SQLAlchemyObjectType):
         class Meta:
@@ -321,10 +311,10 @@ def _create_qraphene_objects(model_classes):
     
 
     @register_gql("song")
-    @add_for_collections("charts", lambda: ChartGQL, "charts")
-    @add_for_collections("ref_recs", lambda: RefRecGQL, "refrecs")
+    @add_for_collections("charts", lambda: ChartGQL)
+    @add_for_collections("ref_recs", lambda: RefRecGQL)
     @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
-    @add_for_collections("song_learns", lambda: SongLearnGQL, "songlearns")
+    @add_for_collections("song_learns", lambda: SongLearnGQL)
     @add_for_collections("song_performs", lambda: SongPerformGQL)
     class SongGQL(SQLAlchemyObjectType):
         class Meta:
