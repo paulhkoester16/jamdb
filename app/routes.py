@@ -131,12 +131,14 @@ def overview_performed_songs():
         """
         query {
           songPerforms {
-            id, songPerformName, song { id, song }, eventocc { id, name },
+            id, songPerformName, song { id, song }, eventocc { id, name, date },
             players { person {id, publicName}, instrumentList },
             performanceVideos { songPerformId, source, link, embeddableLink}
           }
         }"""
     ).data["songPerforms"]
+
+    summaries = sorted(summaries, key=lambda row: row["eventocc"]["date"])
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -262,19 +264,20 @@ def detail_venue(venue_id):
     return my_render_template(g_session, page_name, venue=venue)
 
 
-
-
 def _create_index(graphene_session):
     result = graphene_session.execute("""query {
         eventGens { id, name }
         eventOccs { id, name }
-        songPerforms { id, songPerformName }
+        songPerforms { id, songPerformName, eventocc { date } }
         persons { id, publicName }
         songs { id, song }
         venues { id, venue }
     }""").data
-    result = {k: [list(r.values()) for r in v] for k, v in result.items()}
-
+    result["songPerforms"] = sorted(result["songPerforms"], key=lambda x: x["eventocc"]["date"])
+    result = {
+        entity_name: [list(row.values()) for row in key_vals]
+        for entity_name, key_vals in result.items()
+    }
     
     index = {
         "Series": {
@@ -344,12 +347,7 @@ def _create_index(graphene_session):
     for item in index.values():
         if "detail" in item:
             item["detail"]["rows"] = [
-                [
-                    {
-                        item["detail"]["id"]: x[0]
-                    },
-                    x[1]
-                ] for x in item["detail"]["rows"]
+                [{ item["detail"]["id"]: x[0]}, x[1]] for x in item["detail"]["rows"]
             ]
 
     index = {k: {"pages": v} for k, v in index.items()}
