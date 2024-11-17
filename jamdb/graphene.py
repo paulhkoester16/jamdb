@@ -162,7 +162,7 @@ def _create_qraphene_objects(model_classes):
     class GenreGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Genre"]
-    
+
         event_gens = graphene.List(lambda: EventGenGQL)
         subgenres = graphene.List(lambda: SubgenreGQL)
     
@@ -448,7 +448,6 @@ def _create_qraphene_objects(model_classes):
                 )
             players = [PlayerGQL(**player) for player in players_dict.values()]
             return players
-                
 
 
     @register_gql("song_performer")
@@ -506,223 +505,48 @@ def _create_qraphene_objects(model_classes):
 
 def _query_factory(gql_classes):
     # step 3
+    # Add fields and resolvers to a Query object.
+    #
+    # Each item (e.g., ChartGQL) in gql_classes requires adding two fields and two resolvers;
+    #         charts = graphene.List(ChartGQL)
+    #         chart = graphene.Field(ChartGQL, id=graphene.ID())
+    #         def resolve_charts(root, info):
+    #             return ChartGQL.get_query(info).all()
+    #         def resolve_chart(root, info, id):
+    #             return ChartGQL.get_node(info, id)
+    # There are > 20 such items, so we use to meta-programming in `add_table_obj_to_query`
 
-    ChartGQL = gql_classes["chart"]
-    ComposerGQL = gql_classes["composer"]
-    ContactGQL = gql_classes["contact"]
-    EventGenGQL = gql_classes["event_gen"]
-    EventOccGQL = gql_classes["event_occ"]
-    GenreGQL = gql_classes["genre"]
-    InstrumentGQL = gql_classes["instrument"]
-    KeyGQL = gql_classes["key"]
-    ModeGQL = gql_classes["mode"]
-    PerformanceVideoGQL = gql_classes["performance_video"]
-    PersonGQL = gql_classes["person"]
-    PersonInstrumentGQL = gql_classes["person_instrument"]
-    RefRecGQL = gql_classes["ref_ref"]
-    SetlistGQL = gql_classes["setlist"]
-    SetlistSongGQL = gql_classes["setlist_song"]
-    SongGQL = gql_classes["song"]
-    SongLearnGQL = gql_classes["song_learn"]
-    SongPerformGQL = gql_classes["song_perform"]
-    SongPerformerGQL = gql_classes["song_performer"]
-    SubgenreGQL = gql_classes["subgenre"]
-    VenueGQL = gql_classes["venue"]
-    
     class Query(graphene.ObjectType):
-        # There has got to be a way to meta-program this thing.
-        # I just wanna have a function that takes a dict of 
-        # {"chart": ChartGQL, "composer": ComposergQL, } etc and for each key-value
-        # it creates the var declaration and resolver for both singular and plural version
+        pass
     
-        charts = graphene.List(ChartGQL)
-        chart = graphene.Field(ChartGQL, id=graphene.ID())
-    
-        composers = graphene.List(ComposerGQL)
-        composer = graphene.Field(ComposerGQL, id=graphene.ID())
-    
-        contacts = graphene.List(ContactGQL)
-        contact = graphene.Field(ContactGQL, id=graphene.ID())
-    
-        event_gens = graphene.List(EventGenGQL)
-        event_gen = graphene.Field(EventGenGQL, id=graphene.ID())
-    
-        event_occs = graphene.List(EventOccGQL)
-        event_occ = graphene.Field(EventOccGQL, id=graphene.ID())
-    
-        genres = graphene.List(GenreGQL)
-        genre = graphene.Field(GenreGQL, id=graphene.ID())
-    
-        instruments = graphene.List(InstrumentGQL)
-        instrument = graphene.Field(InstrumentGQL, id=graphene.ID())
-    
-        keys = graphene.List(KeyGQL)
-        key = graphene.Field(KeyGQL, id=graphene.ID())
-    
-        modes = graphene.List(ModeGQL)
-        mode = graphene.Field(ModeGQL, id=graphene.ID())
-    
-        performance_videos = graphene.List(PerformanceVideoGQL)
-        performance_video = graphene.Field(PerformanceVideoGQL, id=graphene.ID())
-    
-        person_instruments = graphene.List(PersonInstrumentGQL)
-        person_instrument = graphene.Field(PersonInstrumentGQL, id=graphene.ID())
-    
-        ref_recs = graphene.List(RefRecGQL)
-        ref_rec = graphene.Field(RefRecGQL, id=graphene.ID())
-    
-        setlists = graphene.List(SetlistGQL)
-        setlist = graphene.Field(SetlistGQL, id=graphene.ID())
-    
-        setlist_songs = graphene.List(SetlistSongGQL)
-        setlist_song = graphene.Field(SetlistSongGQL, id=graphene.ID())
-    
-        songs = graphene.List(SongGQL)
-        song = graphene.Field(SongGQL, id=graphene.ID())
-    
-        song_learns = graphene.List(SongLearnGQL)
-        song_learn = graphene.Field(SongLearnGQL, id=graphene.ID())
-    
-        song_performs = graphene.List(SongPerformGQL)
-        song_perform = graphene.Field(SongPerformGQL, id=graphene.ID())
-    
-        song_performers = graphene.List(SongPerformerGQL)
-        song_performer = graphene.Field(SongPerformerGQL, id=graphene.ID())
-    
-        subgenres = graphene.List(SubgenreGQL)
-        subgenre = graphene.Field(SubgenreGQL, id=graphene.ID())
+    def _factory_resolver_get_all_from_table(cls):
+        def inner_func(root, info):
+            return cls.get_query(info).all()
+        return inner_func
+
+    def _factory_resolver_get_one_from_table(cls):
+        def inner_func(root, info, id):
+            return cls.get_node(info, id)
+        return inner_func
+
+    def add_table_obj_to_query(table_name, table_cls, query_cls):
+        sing = table_name
+        plural = f"{sing}s"
         
-        persons = graphene.List(PersonGQL)
-        person = graphene.Field(PersonGQL, id=graphene.ID())
-    
-        venues = graphene.List(VenueGQL)
-        venue = graphene.Field(VenueGQL, id=graphene.ID())
-    
-        def resolve_charts(root, info):
-            return ChartGQL.get_query(info).all()
-    
-        def resolve_chart(root, info, id):
-            return ChartGQL.get_node(info, id)
-    
-        def resolve_composers(root, info):
-            return ComposerGQL.get_query(info).all()
-    
-        def resolve_composer(root, info, id):
-            return ComposerGQL.get_node(info, id)
-    
-        def resolve_contacts(root, info):
-            return ContactGQL.get_query(info).all()
-    
-        def resolve_contact(root, info, id):
-            return ContactGQL.get_node(info, id)
-    
-        def resolve_event_gens(root, info):
-            return EventGenGQL.get_query(info).all()
-    
-        def resolve_event_gen(root, info, id):
-            return EventGenGQL.get_node(info, id)
-    
-        def resolve_event_occs(root, info):
-            return EventOccGQL.get_query(info).all()
-    
-        def resolve_event_occ(root, info, id):
-            return EventOccGQL.get_node(info, id)
-    
-        def resolve_genres(root, info):
-            return GenreGQL.get_query(info).all()
-    
-        def resolve_genre(root, info, id):
-            return GenreGQL.get_node(info, id)
-    
-        def resolve_instruments(root, info):
-            return InstrumentGQL.get_query(info).all()
-    
-        def resolve_instrument(root, info, id):
-            return InstrumentGQL.get_node(info, id)
-    
-        def resolve_keys(root, info):
-            return KeyGQL.get_query(info).all()
-    
-        def resolve_key(root, info, id):
-            return KeyGQL.get_node(info, id)
-    
-        def resolve_modes(root, info):
-            return ModeGQL.get_query(info).all()
-    
-        def resolve_mode(root, info, id):
-            return ModeGQL.get_node(info, id)
-    
-        def resolve_performance_videos(root, info):
-            return PerformanceVideoGQL.get_query(info).all()
-    
-        def resolve_performance_video(root, info, id):
-            return PerformanceVideoGQL.get_node(info, id)
-    
-        def resolve_person_instruments(root, info):
-            return PersonInstrumentGQL.get_query(info).all()
-    
-        def resolve_person_instrument(root, info, id):
-            return PersonInstrumentGQL.get_node(info, id)
-    
-        def resolve_ref_recs(root, info):
-            return RefRecGQL.get_query(info).all()
-    
-        def resolve_ref_rec(root, info, id):
-            return RefRecGQL.get_node(info, id)
-    
-        def resolve_setlists(root, info):
-            return SetlistGQL.get_query(info).all()
-    
-        def resolve_setlist(root, info, id):
-            return SetlistGQL.get_node(info, id)
-    
-        def resolve_setlist_songs(root, info):
-            return SetlistSongGQL.get_query(info).all()
-    
-        def resolve_setlist_song(root, info, id):
-            return SetlistSongGQL.get_node(info, id)
-    
-        def resolve_songs(root, info):
-            return SongGQL.get_query(info).all()
-    
-        def resolve_song(root, info, id):
-            return SongGQL.get_node(info, id)
-    
-        def resolve_song_learns(root, info):
-            return SongLearnGQL.get_query(info).all()
-    
-        def resolve_song_learn(root, info, id):
-            return SongLearnGQL.get_node(info, id)
-    
-        def resolve_song_performs(root, info):
-            return SongPerformGQL.get_query(info).all()
-    
-        def resolve_song_perform(root, info, id):
-            return SongPerformGQL.get_node(info, id)
-    
-        def resolve_song_performers(root, info):
-            return SongPerformerGQL.get_query(info).all()
-    
-        def resolve_song_performer(root, info, id):
-            return SongPerformerGQL.get_node(info, id)
-    
-        def resolve_subgenres(root, info):
-            return SubgenreGQL.get_query(info).all()
-    
-        def resolve_subgenre(root, info, id):
-            return SubgenreGQL.get_node(info, id)
+        # For fields, can't simply `setattr` on the query cls, since the query and schema has to
+        # resolve across many objects, thus the fields must be added to the query's _meta.
         
-        def resolve_persons(root, info):
-            return PersonGQL.get_query(info).all()
-    
-        def resolve_person(root, info, id):
-            return PersonGQL.get_node(info, id)
-    
-        def resolve_venues(root, info):
-            return VenueGQL.get_query(info).all()
-    
-        def resolve_venue(root, info, id):
-            return VenueGQL.get_node(info, id)
+        query_cls._meta.fields[sing] = graphene.Field(cls, id=graphene.ID())
+        query_cls._meta.fields[plural] = graphene.Field(graphene.List(cls))
+
+        # add resolvers
+        setattr(query_cls, f"resolve_{sing}", _factory_resolver_get_one_from_table(cls))
+        setattr(query_cls, f"resolve_{plural}", _factory_resolver_get_all_from_table(cls))
+
+
+    for name, cls in gql_classes.items():
+        if issubclass(cls, SQLAlchemyObjectType):
+            add_table_obj_to_query(name, cls, Query)
 
     return Query
 
@@ -756,173 +580,3 @@ class GrapheneSQLSession:
 
     def execute(self, query, variables=None):
         return self.schema.execute(query, variables=variables, context_value={'session': self.session})
-
-
-
-def _query_factory_broken(gql_classes):
-    # Trying to do some meta-programming to reduce the boilerplate
-    # oh, so much boilerplate....
-
-    ChartGQL = gql_classes["chart"]
-    ComposerGQL = gql_classes["composer"]
-    ContactGQL = gql_classes["contact"]
-    EventGenGQL = gql_classes["event_gen"]
-    EventOccGQL = gql_classes["event_occ"]
-    GenreGQL = gql_classes["genre"]
-    InstrumentGQL = gql_classes["instrument"]
-    KeyGQL = gql_classes["key"]
-    ModeGQL = gql_classes["mode"]
-    PerformanceVideoGQL = gql_classes["performance_video"]
-    PersonGQL = gql_classes["person"]
-    PersonInstrumentGQL = gql_classes["person_instrument"]
-    RefRecGQL = gql_classes["ref_ref"]
-    SetlistGQL = gql_classes["setlist"]
-    SetlistSongGQL = gql_classes["setlist_song"]
-    SongGQL = gql_classes["song"]
-    SongLearnGQL = gql_classes["song_learn"]
-    SongPerformGQL = gql_classes["song_perform"]
-    SongPerformerGQL = gql_classes["song_performer"]
-    SubgenreGQL = gql_classes["subgenre"]
-    VenueGQL = gql_classes["venue"]
-
-    class Query(graphene.ObjectType):        
-        # There has got to be a way to meta-program this thing.
-        # I just wanna have a function that takes a dict of 
-        # {"chart": ChartGQL, "composer": ComposergQL, } etc and for each key-value
-        # it creates the var declaration and resolver for both singular and plural version
-
-        @classmethod
-        def thing(cls):
-            for cls_name, g_cls in gql_classes.items():
-                setattr(g_cls, cls_name, graphene.Field(g_cls, id=graphene.ID()))
-                setattr(g_cls, f"{cls_name}s", graphene.List(cls))
-            return cls
-    
-        def resolve_charts(root, info):
-            return ChartGQL.get_query(info).all()
-    
-        def resolve_chart(root, info, id):
-            return ChartGQL.get_node(info, id)
-    
-        def resolve_composers(root, info):
-            return ComposerGQL.get_query(info).all()
-    
-        def resolve_composer(root, info, id):
-            return ComposerGQL.get_node(info, id)
-    
-        def resolve_contacts(root, info):
-            return ContactGQL.get_query(info).all()
-    
-        def resolve_contact(root, info, id):
-            return ContactGQL.get_node(info, id)
-    
-        def resolve_event_gens(root, info):
-            return EventGenGQL.get_query(info).all()
-    
-        def resolve_event_gen(root, info, id):
-            return EventGenGQL.get_node(info, id)
-    
-        def resolve_event_occs(root, info):
-            return EventOccGQL.get_query(info).all()
-    
-        def resolve_event_occ(root, info, id):
-            return EventOccGQL.get_node(info, id)
-    
-        def resolve_genres(root, info):
-            return GenreGQL.get_query(info).all()
-    
-        def resolve_genre(root, info, id):
-            return GenreGQL.get_node(info, id)
-    
-        def resolve_instruments(root, info):
-            return InstrumentGQL.get_query(info).all()
-    
-        def resolve_instrument(root, info, id):
-            return InstrumentGQL.get_node(info, id)
-    
-        def resolve_keys(root, info):
-            return KeyGQL.get_query(info).all()
-    
-        def resolve_key(root, info, id):
-            return KeyGQL.get_node(info, id)
-    
-        def resolve_modes(root, info):
-            return ModeGQL.get_query(info).all()
-    
-        def resolve_mode(root, info, id):
-            return ModeGQL.get_node(info, id)
-    
-        def resolve_performance_videos(root, info):
-            return PerformanceVideoGQL.get_query(info).all()
-    
-        def resolve_performance_video(root, info, id):
-            return PerformanceVideoGQL.get_node(info, id)
-    
-        def resolve_person_instruments(root, info):
-            return PersonInstrumentGQL.get_query(info).all()
-    
-        def resolve_person_instrument(root, info, id):
-            return PersonInstrumentGQL.get_node(info, id)
-    
-        def resolve_ref_recs(root, info):
-            return RefRecGQL.get_query(info).all()
-    
-        def resolve_ref_rec(root, info, id):
-            return RefRecGQL.get_node(info, id)
-    
-        def resolve_setlists(root, info):
-            return SetlistGQL.get_query(info).all()
-    
-        def resolve_setlist(root, info, id):
-            return SetlistGQL.get_node(info, id)
-    
-        def resolve_setlist_songs(root, info):
-            return SetlistSongGQL.get_query(info).all()
-    
-        def resolve_setlist_song(root, info, id):
-            return SetlistSongGQL.get_node(info, id)
-    
-        def resolve_songs(root, info):
-            return SongGQL.get_query(info).all()
-    
-        def resolve_song(root, info, id):
-            return SongGQL.get_node(info, id)
-    
-        def resolve_song_learns(root, info):
-            return SongLearnGQL.get_query(info).all()
-    
-        def resolve_song_learn(root, info, id):
-            return SongLearnGQL.get_node(info, id)
-    
-        def resolve_song_performs(root, info):
-            return SongPerformGQL.get_query(info).all()
-    
-        def resolve_song_perform(root, info, id):
-            return SongPerformGQL.get_node(info, id)
-    
-        def resolve_song_performers(root, info):
-            return SongPerformerGQL.get_query(info).all()
-    
-        def resolve_song_performer(root, info, id):
-            return SongPerformerGQL.get_node(info, id)
-    
-        def resolve_subgenres(root, info):
-            return SubgenreGQL.get_query(info).all()
-    
-        def resolve_subgenre(root, info, id):
-            return SubgenreGQL.get_node(info, id)
-        
-        def resolve_persons(root, info):
-            return PersonGQL.get_query(info).all()
-    
-        def resolve_person(root, info, id):
-            return PersonGQL.get_node(info, id)
-    
-        def resolve_venues(root, info):
-            return VenueGQL.get_query(info).all()
-    
-        def resolve_venue(root, info, id):
-            return VenueGQL.get_node(info, id)
-
-    return Query.thing()
-
