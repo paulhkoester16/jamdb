@@ -42,9 +42,23 @@ def _create_qraphene_objects(model_classes):
 
         def inner_function(cls):
             cls._meta.fields[field_name] = graphene.Field(graphene.List(cls_fnc))
-            setattr(cls, f"resolve_{field_name}", _factory_resolver(collection_name))        
+            setattr(cls, f"resolve_{field_name}", _factory_resolver(collection_name))
             return cls
     
+        return inner_function
+
+    def add_embeddable_link():
+
+        def _factory_resolver():
+            def inner_func(root, info):
+                return create_embed_link(root.source, root.link)
+            return inner_func
+        
+        def inner_function(cls):
+            cls._meta.fields["embeddable_link"] = graphene.Field(graphene.String)
+            setattr(cls, "resolve_embeddable_link", _factory_resolver())
+            return cls
+            
         return inner_function
 
 
@@ -67,16 +81,12 @@ def _create_qraphene_objects(model_classes):
 
 
     @register_gql("chart")
+    @add_embeddable_link()
     class ChartGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Chart"]
 
-        embeddable_link = graphene.String()
-        
-        def resolve_embeddable_link(root, info):
-            return create_embed_link(root.source, root.link)
 
-    
     @register_gql("composer")
     @add_for_collections("songs", lambda: SongGQL)
     class ComposerGQL(SQLAlchemyObjectType):
@@ -177,14 +187,11 @@ def _create_qraphene_objects(model_classes):
 
 
     @register_gql("performance_video")
+    @add_embeddable_link()
     class PerformanceVideoGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["PerformanceVideo"]
 
-        embeddable_link = graphene.String()
-
-        def resolve_embeddable_link(root, info):
-            return create_embed_link(root.source, root.link)
 
     @register_gql("person")
     @add_for_collections("contacts", lambda: ContactGQL)
@@ -287,15 +294,11 @@ def _create_qraphene_objects(model_classes):
 
     
     @register_gql("ref_ref")
+    @add_embeddable_link()
     class RefRecGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["RefRec"]
 
-        embeddable_link = graphene.String()
-
-        def resolve_embeddable_link(root, info):
-            return create_embed_link(root.source, root.link)
-    
 
     @register_gql("setlist")
     @add_for_collections("setlist_songs", lambda: SetlistSongGQL)
