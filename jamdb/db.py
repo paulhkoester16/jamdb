@@ -103,7 +103,6 @@ class DBHandler:
 # import graphviz
 # import pandas as pd
 
-# from .entities import entity_factory
 # from .globals import ME_ID
 
 # # set a global or evn variable for db_file = "jamming.db"
@@ -164,7 +163,6 @@ class DBHandler:
 #         except Exception as exc:
 #             msg = f"Error in \n{command}"
 #             raise Exception(msg) from exc
-#     db_handler._set_entities()
 #     db_handler.close()
 
 
