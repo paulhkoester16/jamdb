@@ -188,45 +188,6 @@ class DBHandler:
 #             value = self.data_dir / "jamming.db"
 #         self.__db_file = Path(value)
 #         self._connect(self.__db_file)
-#         self._set_entities()
-
-#     @property
-#     def entities(self):
-#         return self.__entities
-
-#     def _set_entities(self):
-#         try:
-#             df = self.query("SELECT table_name, column from _schema_columns")
-#             df["column"] = df["column"].apply(lambda x: [x])
-#             table_cols = df.groupby("table_name")["column"].sum().to_dict()
-#             table_metadata = [
-#                 {
-#                     "entity_class_name": table_name,
-#                     "columns": cols,
-#                 }
-#                 for table_name, cols in table_cols.items()
-#             ]
-#             for table in table_metadata:
-#                 table_name = table["entity_class_name"]
-#                 pks = list(
-#                     self.query(
-#                         f'SELECT name, pk FROM pragma_table_info("{table_name}") WHERE pk > 0;'
-#                     ).sort_values("pk")["name"]
-#                 )
-#                 if len(pks) != 1:
-#                     raise DBError(
-#                         f"Trying to pass composite key {pks=} to {table_name=}"
-#                     )
-#                 table["primary_key"] = pks[0]
-
-#             self.__entities = {
-#                 metadata["entity_class_name"]: entity_factory(**metadata)
-#                 for metadata in table_metadata
-#             }
-#         except pd.errors.DatabaseError:
-#             # This should only be necessary when `init_db` is called, as then the
-#             # backend is initiated BEFORE it gets populated
-#             self.__entities = {}
 
 #     @property
 #     def is_authenticated(self):
@@ -350,27 +311,6 @@ class DBHandler:
 #                     sorted_tables[right_idx] = left_table
 #         return sorted_tables
 
-#     def _create_erd(self):
-#         # Some calling script can save `erd.render("autodocs/assets/erd", format="png")`
-#         # E.g., part of autodoc or other build
-#         relations = self._get_relations()
-#         all_entities = set(relations["left_table"]).union(relations["right_table"])
-#         erd = graphviz.Digraph("ERD")
-
-#         for entity in all_entities:
-#             erd.node(entity)
-
-#         for _, row in relations.iterrows():
-#             label = row["left_key"]
-#             ## Abstract this part -- can we just uniquify on some dims of relations?
-#             if label == "other_player_01":
-#                 label = "other_player_{N}"
-#             elif label.startswith("other_player"):
-#                 continue
-#             erd.edge(row["left_table"], row["right_table"], label=label)
-
-#         erd.attr(rankdir="BT")
-#         return erd
 
 #     def _insert_or_update(self, table_name, row, command, commit):
 #         try:
@@ -410,35 +350,11 @@ class DBHandler:
 #         self.reset_conn()
 #         return self._get_row(table_name, primary_key)
     
-#     def _get_row(self, table_name, primary_key):
-#         try:
-#             key_name = self.entities[table_name].primary_key
-#         except KeyError as exc:
-#             msg = f"Trying to get row from non-existent {table_name=}"
-#             raise DBError(msg) from exc
-
-#         where_clause = self._create_where_clause(key_name, primary_key)
-
-#         retrieved = self.query(f"SELECT * FROM {table_name} {where_clause}").to_dict(
-#             orient="records"
-#         )
-#         if len(retrieved) == 0:
-#             msg = f"Empty retrieval for {primary_key=} from {table_name=}"
-#             raise DBError(msg)
-#         if len(retrieved) > 1:
-#             msg = (
-#                 f"Retrieved multiple for {primary_key=} from {table_name=}."
-#                 "This SHOULD be impossible, given the primary key constraints."
-#             )
-#             raise DBError(msg)
-#         return retrieved[0]
-
 #     def insert_row(self, table_name, row, commit=True):
 #         self.reset_conn()
 #         return self._insert_row(table_name, row, commit)
     
 #     def _insert_row(self, table_name, row, commit=True):
-#         row = self.entities[table_name].impute_row(row)
 
 #         cols = ",".join(list(row.keys()))
 #         vals = ",".join([f'"{str(x)}"' for x in row.values()])
