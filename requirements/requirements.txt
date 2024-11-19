@@ -9,3 +9,4 @@ Flask-GraphQL
 wtforms
 sqlalchemy
 graphene-sqlalchemy
+eralchemy[graphviz]

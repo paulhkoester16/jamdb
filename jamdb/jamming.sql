@@ -164,16 +164,6 @@ CREATE TABLE Subgenre (
 	FOREIGN KEY (genre_id) REFERENCES Genre (id)
 );
 
-CREATE TABLE SongLearn (
-	id	TEXT	NOT NULL,
-	song_id	TEXT	NOT NULL,
-	instrument_id	TEXT	NOT NULL,
-	date	TEXT	NOT NULL,
-	key_id	TEXT,
-	PRIMARY KEY	(id),
-	FOREIGN KEY (song_id) REFERENCES Song (id),    
-	FOREIGN KEY (key_id) REFERENCES Key (id)
-);
 
 CREATE TABLE EventOcc (
 	id	TEXT	NOT NULL,
@@ -195,6 +185,17 @@ CREATE TABLE Song (
 	FOREIGN KEY (subgenre_id) REFERENCES Subgenre (id),
 	FOREIGN KEY (key_id) REFERENCES Key (id),
 	FOREIGN KEY (composer_id) REFERENCES Composer (id)
+);
+
+CREATE TABLE SongLearn (
+	id	TEXT	NOT NULL,
+	song_id	TEXT	NOT NULL,
+	instrument_id	TEXT	NOT NULL,
+	date	TEXT	NOT NULL,
+	key_id	TEXT,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (song_id) REFERENCES Song (id),    
+	FOREIGN KEY (key_id) REFERENCES Key (id)
 );
 
 CREATE TABLE RefRec (

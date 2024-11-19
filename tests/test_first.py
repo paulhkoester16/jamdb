@@ -1,9 +1,12 @@
+import sqlalchemy
 from jamdb.globals import TEST_DATA_DIR, TEST_DB_FILE
-from jamdb.db import db_factory
+from jamdb.db import DBHandler
 
-db_handler = db_factory(data_dir=TEST_DATA_DIR, db_file=TEST_DB_FILE)
+db_handler = DBHandler.from_db_file(db_file=TEST_DB_FILE)
 
 def test_simple():
-    actual = db_handler.get_row(table_name="Key", primary_key="D_minor")
-    expected = {'id': 'D_minor', 'root': 'D', 'mode_id': 'minor'}
+    with db_handler.Session.begin() as session:
+        actual = session.execute(sqlalchemy.text("SELECT * FROM Key WHERE id == 'D_minor'")).fetchone()
+
+    expected = ('D_minor', 'D', 'minor')
     assert actual == expected

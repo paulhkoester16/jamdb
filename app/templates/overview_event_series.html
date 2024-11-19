@@ -32,9 +32,11 @@
               </a>
             </td>
             <td>
-              <a href="{{ url_for('detail_player', person_id=summary['host']['id']) }}" class="list-group-item">
-                {{ summary['host']['publicName'] }}
-              </a>
+              {% if summary["host"] is not none %}
+                <a href="{{ url_for('detail_player', person_id=summary['host']['id']) }}" class="list-group-item">
+                  {{ summary['host']['publicName'] }}
+                </a>
+              {% endif %}
             </td>
             <td class="list-group">
               {% for event in summary['eventOccs'] %}
