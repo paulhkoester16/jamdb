@@ -128,4 +128,6 @@ if __name__ == "__main__":
             
         print("DB created!")
 
-    eralchemy.render_er(f"sqlite:///{db_file}", str(data_dir / "erd.png"))
+    exclude_tables=["_schema_tables", "_schema_columns"]
+    eralchemy.render_er(f"sqlite:///{db_file}", str(data_dir / "erd.png"), exclude_tables=exclude_tables)
+    eralchemy.render_er(f"sqlite:///{db_file}", str("docs/images/erd.png"), exclude_tables=exclude_tables)

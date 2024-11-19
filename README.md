@@ -2,8 +2,13 @@
 
 
 ## Data
-This depends on existence of `data/jamming.db`.
+This depends on existence of `data/app_data/jamming.db`.
 We do NOT provide the data in the repo.
+
+### Data model
+<p align="center">
+  <img src="./docs/images/erd.png" width="800" title="ERD">
+</p>
 
 ## Setting up Docker
 
