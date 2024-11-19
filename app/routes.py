@@ -41,10 +41,12 @@ def overview_event_occs():
             id, name, date, venue { id, venue },
             songPerforms { id, song { id, song } }
             players { person { id, publicName } }
+            eventgen { name }
           }
         }
         """
     ).data["eventOccs"]
+    summaries = sorted(summaries, key=lambda x: (x["eventgen"]["name"], x["date"]))
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -63,7 +65,7 @@ def overview_event_series():
     ).data["eventGens"]
     for event in summaries:
         event["host"] = event.pop("person")
-
+    summaries = sorted(summaries, key=lambda x: x["name"])
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -81,6 +83,7 @@ def overview_players():
         }
         """
     ).data["persons"]
+    summaries = sorted(summaries, key=lambda x: x["combinedName"])
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -98,10 +101,10 @@ def overview_songs():
         }
         """
     ).data["songs"]
-
+    summaries = sorted(summaries, key=lambda x: x["song"])
     return my_render_template(g_session, page_name, summaries=summaries)
 
-
+    
 @app.route("/overview-performance_videos/", methods=["GET"])
 def overview_performance_videos():
     page_name = "overview_performance_videos"
@@ -119,7 +122,7 @@ def overview_performance_videos():
         }
         """
     ).data["performanceVideos"]
-
+    summaries = sorted(summaries, key=lambda x: (x["songperform"]["song"]["song"], x["songperform"]["eventocc"]["date"]))
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -137,8 +140,7 @@ def overview_performed_songs():
           }
         }"""
     ).data["songPerforms"]
-
-    summaries = sorted(summaries, key=lambda row: row["eventocc"]["date"])
+    summaries = sorted(summaries, key=lambda x: (x["song"]["song"], x["eventocc"]["date"]))
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -267,13 +269,18 @@ def detail_venue(venue_id):
 def _create_index(graphene_session):
     result = graphene_session.execute("""query {
         eventGens { id, name }
-        eventOccs { id, name }
-        songPerforms { id, songPerformName, eventocc { date } }
+        eventOccs { id, name, date, eventgen { name } }
+        songPerforms { id, songPerformName, eventocc { date }, song { song } }
         persons { id, publicName }
         songs { id, song }
         venues { id, venue }
     }""").data
-    result["songPerforms"] = sorted(result["songPerforms"], key=lambda x: x["eventocc"]["date"])
+    result["eventGens"] = sorted(result["eventGens"], key=lambda x: x["name"])
+    result["eventOccs"] = sorted(result["eventOccs"], key=lambda x: (x["eventgen"]["name"], x["date"]))
+    result["songPerforms"] = sorted(result["songPerforms"], key=lambda x: (x["song"]["song"], x["eventocc"]["date"]))
+    result["persons"] = sorted(result["persons"], key=lambda x: x["publicName"])
+    result["songs"] = sorted(result["songs"], key=lambda x: x["song"])
+    result["venues"] = sorted(result["venues"], key=lambda x: x["venue"])
     result = {
         entity_name: [list(row.values()) for row in key_vals]
         for entity_name, key_vals in result.items()
