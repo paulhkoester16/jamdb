@@ -1,13 +1,14 @@
 from collections import defaultdict
+import base64
 from flask import current_app as app
 from flask import Flask, render_template
 
-from jamdb.globals import ME_ID
+from jamdb.globals import ME_ID, DATA_DIR, DB_FILE
 from jamdb.graphene import GrapheneSQLSession
 
 
 def init_graphene_session():
-    return GrapheneSQLSession.from_sqlite_file()
+    return GrapheneSQLSession.from_sqlite_file(DB_FILE)
 
 
 def my_render_template(graphene_session, page_name, **kwargs):
@@ -21,6 +22,15 @@ def my_render_template(graphene_session, page_name, **kwargs):
         {"page_name": page_name, "index": index, "nav_page_has_my_table": nav_page_has_my_table}
     )
     return render_template(f"{page_name}.html", **kwargs)
+
+
+def convert_image_to_base64(image_path):
+    """Converts an image to base64 encoding."""
+
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+    return encoded_string        
+
 
 
 @app.route('/', methods=["GET", "POST"])
@@ -221,7 +231,6 @@ def detail_song(song_id):
 
 @app.route("/detail-player/<string:person_id>")
 def detail_player(person_id):
-    # TODO:  person["pictures"] = [str(pic_path.absolute()) for pic_path in person["pictures"]]
     page_name = "detail_player"
     g_session = init_graphene_session()
     person = g_session.execute(
@@ -244,6 +253,11 @@ def detail_player(person_id):
             public_contacts_by_type[contact["contactType"]].append(contact)
     person["public_contacts_by_type"] = public_contacts_by_type
 
+    person["pictures"] = []
+    pics_dir = DATA_DIR / "people" / person_id
+    if pics_dir.exists:
+        person["pictures"] = [convert_image_to_base64(pic_path) for pic_path in pics_dir.glob("*.png")]
+    
     return my_render_template(g_session, page_name, person=person)
 
 
