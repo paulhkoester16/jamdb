@@ -63,6 +63,7 @@ USER appuser
 # Copy the source code into the container.
 COPY jamdb jamdb
 COPY app app
+COPY data/app_data/paul_k app/static
 
 
 # port needs to match that defined in compose.yaml

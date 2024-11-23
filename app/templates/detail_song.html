@@ -49,12 +49,17 @@
           <div>
             <h3>Charts</h3>
             {% for chart in song['charts'] %}
-              {% if chart.get('embeddableLink', '') != '' %}
-                <iframe height="100%" src="{{ chart['embeddableLink'] }}"></iframe>
-              {% endif %}
-              <a href="{{ chart['link'] }}" class="list-group-item">
+              {% if chart['source'] == 'pdf' %}
+                  <iframe height="100%" src="{{ url_for('static', filename=chart['link']) }}"></iframe>
                 {{ chart['link'] }}
-              </a>
+              {% else %}
+                {% if chart.get('embeddableLink', '') != '' %}
+                  <iframe height="100%" src="{{ chart['embeddableLink'] }}"></iframe>
+                {% endif %}
+                <a href="{{ chart['link'] }}" class="list-group-item">
+                  {{ chart['displayName'] }}
+                </a>
+              {% endif %}
             {% endfor %}
           </div>
         {% endif %}

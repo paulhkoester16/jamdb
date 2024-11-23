@@ -11,9 +11,8 @@
     <div class="row">  
       <div class="col-lg-6">
         <div class="list-group">
-          {% for base64_img in person["pictures"] %}
-            <!-- <img src="{{ img_link }}" class="img-fluid" alt="Pic of {{ public_name }}"> -->
-            <img src="data:image/png;base64,{{ base64_img }}" class="img-fluid" height="400" />
+          {% for pic in person["personPictures"] %}
+            <img src="{{ url_for('static', filename=pic['link']) }}" class="img-fluid" alt="Pic of {{ public_name }}">
           {% endfor %}            
           <a href="#" class="list-group-item">
             <h4>Full name</h4>
@@ -38,7 +37,6 @@
                     </a>
                   {% endif %}
                   {% if contact.get("contactInfo", "") is not none and contact.get("contactInfo", "") != "" %}
-                    HERE!!
                     {{ contact['contactType'] }}:  {{ contact['contactInfo'] }}
                   {% endif %}                  
                 {% endfor %}

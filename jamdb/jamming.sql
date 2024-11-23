@@ -24,6 +24,8 @@ DROP TABLE IF EXISTS [Mode];
 
 DROP TABLE IF EXISTS [Person];
 
+DROP TABLE IF EXISTS [PersonPicture];
+
 DROP TABLE IF EXISTS [PersonInstrument];
 
 DROP TABLE IF EXISTS [PerformanceVideo];
@@ -85,6 +87,14 @@ CREATE TABLE Person (
 	public_name	TEXT	NOT NULL	UNIQUE,
 	full_name	TEXT	NOT NULL	UNIQUE,
 	PRIMARY KEY	(id)
+);
+
+CREATE TABLE PersonPicture (
+	id	TEXT	NOT NULL,
+	person_id	TEXT	NOT NULL,
+	link	TEXT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id),
+	FOREIGN KEY (person_id) REFERENCES Person (id)
 );
 
 CREATE TABLE Contact (
@@ -163,7 +173,6 @@ CREATE TABLE Subgenre (
 	PRIMARY KEY	(id),
 	FOREIGN KEY (genre_id) REFERENCES Genre (id)
 );
-
 
 CREATE TABLE EventOcc (
 	id	TEXT	NOT NULL,
@@ -277,6 +286,7 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("Mode", "Information about mode."),
 	("PerformanceVideo", "Video link for a performed song."),
 	("Person", "Public Information about a person."),
+	("PersonPicture", "Links to person pictures."),
 	("PersonInstrument", "Which instruments are played by a given person."),
 	("RefRec", "Links to reference recordings of songs."),
 	("Setlist", "Setlist information."),
@@ -287,7 +297,6 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("SongPerformer", "Information about performers on a given performed song."),
 	("Subgenre", "Granular genre information. Subgenres can be at the level of 'Bop' vs 'Swing', etc.  See also `Grenre`."),
 	("Venue", "Information about a physical venue, including venue name, address, etc.");
-
 
 
 INSERT INTO _schema_columns (table_name, column, description) VALUES
@@ -335,6 +344,9 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("PersonInstrument", "id", "Unique ID for PersonInstrument."),
 	("PersonInstrument", "person_id", "ID of the Person."),
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
+	("PersonPicture", "id", "Unique ID for PersonPicture."),
+	("PersonPicture", "person_id", "ID for picture's person."),
+	("PersonPicture", "link", "Link to picture."),
 	("RefRec", "id", "Unique ID of the RefRec."),
 	("RefRec", "song_id", "ID of the RefRec's song"),
 	("RefRec", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),

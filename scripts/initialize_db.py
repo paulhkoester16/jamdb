@@ -4,11 +4,16 @@
 #   DB as the system of record.
 #   Until then, we should only modify the ODS files, and periodically rebuild.
 from pathlib import Path
+import copy
 import sys
+import json
 import argparse
+from shutil import copytree, rmtree
+import pandas as pd
 from pandas_ods_reader import read_ods
 import sqlalchemy
 import eralchemy
+import hashlib
 
 REPO_ROOT = Path("./").absolute()
 sys.path.append(str(REPO_ROOT))
@@ -17,8 +22,13 @@ from jamdb.transformations import format_id_as_str
 from jamdb.globals import ME_ID
 
 SQL_FILE = Path("jamdb/jamming.sql")
-SRC_DATA_DIR = REPO_ROOT / "data" / "source_data" 
+SRC_DATA_DIR = REPO_ROOT / "data" / "source_data"
 ODS_FILE = SRC_DATA_DIR / "public.ods"
+DATA_SUB_DIRS = ["people", "charts"]
+
+
+def row_to_hash(row):
+    return hashlib.md5(str(row.to_dict().values()).encode()).hexdigest()
 
 
 def _parse_sql_file(sql_file):
@@ -33,6 +43,7 @@ def _parse_sql_file(sql_file):
     commands = [command.strip() for command in commands]
     return commands
 
+
 def _sorted_table_names():
     # When inserting, need to insert in correct order, regarding FKs
     # Here I assume the order of tabels in the sql file addresses the order    
@@ -41,10 +52,12 @@ def _sorted_table_names():
     table_names = [x for x in table_names if not x.startswith("_")]
     return table_names
 
+
 def create_tables(db_handler):
     with db_handler.Session.begin() as session:
         for command in _parse_sql_file(SQL_FILE):
             session.execute(sqlalchemy.text(command))
+
 
 def insert_for_song_performance(db_handler, song_perform, me_id=ME_ID):
     song_performers = []
@@ -85,6 +98,45 @@ def insert_for_song_performance(db_handler, song_perform, me_id=ME_ID):
     db_handler.insert("PerformanceVideo", videos)
 
 
+def process_charts(data_dir, charts_df):
+    ireal_charts = []
+    for song_dir in (data_dir / "charts").glob("*"):
+        for chart_file in song_dir.glob("*"):
+            chart = {"song_id": song_dir.stem}
+            if chart_file.suffix == ".pdf":
+                chart["source"] = "pdf"
+                chart["link"] = str(chart_file.relative_to(data_dir))
+                chart["display_name"] = chart_file.stem
+            elif chart_file.suffix == ".json" and chart_file.stem.endswith("_ireal"):
+                data = json.loads(chart_file.read_text())
+                chart["source"] = "ireal"
+                chart["link"] = data["i_real_href"]
+                chart["display_name"] = f"{data['song_name']} (click to download into iReal)"            
+            else:
+                print(f"Unkown chart format:  {chart_file}")
+                continue
+            ireal_charts.append(copy.deepcopy(chart))
+    ireal_charts = pd.DataFrame(ireal_charts)
+
+    ireal_charts["id"] = ireal_charts.apply(row_to_hash, axis=1)
+    print(f"    Original size of Charts df:  {df.shape}")
+    print(f"    Size of iReal Charts:        {ireal_charts.shape}")                
+    charts_df = pd.concat([charts_df, ireal_charts])
+    return charts_df
+
+def process_person_picture(data_dir):
+    person_pictures = []
+    for person_dir in (data_dir / "people").glob("*"):
+        person_id = person_dir.stem
+        for person_file in person_dir.glob("*"):
+            link = str(person_file.relative_to(data_dir))
+            person_pictures.append({"person_id": person_id, "link": link})
+
+    person_pictures = pd.DataFrame(person_pictures)
+    person_pictures["id"] = person_pictures.apply(row_to_hash, axis=1)
+    return person_pictures
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog='initialize_jam_db')
@@ -104,23 +156,46 @@ if __name__ == "__main__":
 
     if force_rebuild:
         db_file.unlink(missing_ok=True)
+        for sub_dir in DATA_SUB_DIRS:
+            dir_ = data_dir / sub_dir
+            print(dir_)
+            if dir_.exists():
+                print(f"Removing {dir_}")
+                rmtree(dir_)
 
     if db_file.exists():
-        
         print(f"{db_file=} already exists.")
     else:
         db_handler = DBHandler.from_db_file(db_file)
+
+        for sub_dir in DATA_SUB_DIRS:
+            src_dir = SRC_DATA_DIR / sub_dir
+            dest_dir = data_dir / sub_dir
+            print(f"Copy {src_dir} over to {dest_dir}")
+            copytree(src_dir, dest_dir)
+
+        print("Creating tables")
         create_tables(db_handler)
 
         for table_name in _sorted_table_names():
+            print(f"Inserting into {table_name}")
             if table_name in ["PerformanceVideo", "SongPerformer"]:
                 continue
-            df = read_ods(ODS_FILE, table_name)
+
+            if table_name == "PersonPicture":
+                df = process_person_picture(data_dir)
+            else:
+                df = read_ods(ODS_FILE, table_name)
+
+            if table_name == "Chart":
+                df = process_charts(data_dir, df)
+
             if table_name == "Venue":
                 df["zip"] = df["zip"].apply(format_id_as_str)
+            
             if isinstance(df["id"].iloc[0], (float, int)):
                 df["id"] = df["id"].apply(format_id_as_str)
-        
+
             if table_name == "SongPerform":
                 insert_for_song_performance(db_handler, df)
             else:

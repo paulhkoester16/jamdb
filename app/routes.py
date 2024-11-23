@@ -32,7 +32,6 @@ def convert_image_to_base64(image_path):
     return encoded_string        
 
 
-
 @app.route('/', methods=["GET", "POST"])
 def index():
     page_name = "index"
@@ -219,7 +218,7 @@ def detail_song(song_id):
           song(id: $id) {
             id, song, key { keyName }, subgenre { subgenreName }
             songPerforms { id, eventocc { name } }
-            charts { link, embeddableLink }
+            charts { source, link, embeddableLink, displayName }
             refRecs { link, embeddableLink }
           }
         }
@@ -241,7 +240,8 @@ def detail_player(person_id):
             contacts { id, contactType, contactInfo, link, private },
             eventsAttended { id, name, date },
             songsPerformedWith(otherPersonId: $otherPersonId) { id, songPerformName },
-            songsPerformedWithout(otherPersonId: $otherPersonId) { id, songPerformName }
+            songsPerformedWithout(otherPersonId: $otherPersonId) { id, songPerformName },
+            personPictures { link }
           }
         }
         """,
@@ -253,11 +253,6 @@ def detail_player(person_id):
             public_contacts_by_type[contact["contactType"]].append(contact)
     person["public_contacts_by_type"] = public_contacts_by_type
 
-    person["pictures"] = []
-    pics_dir = DATA_DIR / "people" / person_id
-    if pics_dir.exists:
-        person["pictures"] = [convert_image_to_base64(pic_path) for pic_path in pics_dir.glob("*.png")]
-    
     return my_render_template(g_session, page_name, person=person)
 
 

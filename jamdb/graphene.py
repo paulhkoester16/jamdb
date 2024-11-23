@@ -61,7 +61,6 @@ def _create_qraphene_objects(model_classes):
             
         return inner_function
 
-
     def _personinstruments_to_instruments(personinstruments):
         insts = {
             pers_inst.instrument.id: pers_inst.instrument
@@ -203,6 +202,7 @@ def _create_qraphene_objects(model_classes):
     @add_for_collections("contacts", lambda: ContactGQL)
     @add_for_collections("event_gens", lambda: EventGenGQL)
     @add_for_collections("person_instruments", lambda: PersonInstrumentGQL)
+    @add_for_collections("person_pictures", lambda: PersonPictureGQL)
     class PersonGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Person"]
@@ -298,7 +298,13 @@ def _create_qraphene_objects(model_classes):
                 events[event.id] = event
             return sorted(list(events.values()), key=lambda x: x.date)
 
-    
+
+    @register_gql("person_picture")
+    class PersonPictureGQL(SQLAlchemyObjectType):    
+        class Meta:
+            model = model_classes["PersonPicture"]
+
+
     @register_gql("ref_ref")
     @add_embeddable_link()
     class RefRecGQL(SQLAlchemyObjectType):
