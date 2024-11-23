@@ -9,7 +9,7 @@
 {% block content %}
   <div class="container">
     <div class="row">
-      <div class="col-lg-4">
+      <div class="col-md-6">
         <div class="list-group">
           <a href="#" class="list-group-item">
             <h4>Song</h4>
@@ -41,20 +41,36 @@
               </a>
             {% endfor %}
           </div>
-        {% endif %}        
+        {% endif %}
+
+        {% if song.get('refRecs', []) != [] %}
+          <div>
+            <h3>Reference Recordings</h3>          
+            {% for video in song['refRecs'] %}
+              {% if video.get('embeddableLink', '') != ''  %}
+                <iframe style="border-radius:12px" src="{{ video['embeddableLink'] }}" width="80%" height="200" frameBorder="0"
+                    allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+              {% else %}
+                <a href="{{ video['link'] }}" class="list-group-item">
+                  {{ video['link'] }}
+                </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+          
       </div>
 
-      <div class="col-lg-4">
+      <div class="col-md-6">
         {% if song.get('charts', []) != [] %}
           <div>
             <h3>Charts</h3>
             {% for chart in song['charts'] %}
               {% if chart['source'] == 'pdf' %}
-                  <iframe height="100%" src="{{ url_for('static', filename=chart['link']) }}"></iframe>
-                {{ chart['link'] }}
+                  <iframe width="100%" height="900" src="{{ url_for('static', filename=chart['link']) }}"></iframe>
               {% else %}
                 {% if chart.get('embeddableLink', '') != '' %}
-                  <iframe height="100%" src="{{ chart['embeddableLink'] }}"></iframe>
+                  <iframe width="100%" src="{{ chart['embeddableLink'] }}"></iframe>
                 {% endif %}
                 <a href="{{ chart['link'] }}" class="list-group-item">
                   {{ chart['displayName'] }}
@@ -63,23 +79,7 @@
             {% endfor %}
           </div>
         {% endif %}
-      </div>
 
-      <div class="col-lg-4">
-        {% if song.get('refRecs', []) != [] %}
-          <div>
-            <h3>Reference Recordings</h3>          
-            {% for video in song['refRecs'] %}
-              {% if video.get('embeddableLink', '') != ''  %}
-                <iframe style="border-radius:12px" src="{{ video['embeddableLink'] }}" width="100%" height="250" frameBorder="0"
-                    allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
-              {% endif %}
-              <a href="{{ video['link'] }}" class="list-group-item">
-                {{ video['link'] }}
-              </a>
-            {% endfor %}
-          </div>
-        {% endif %}
       </div>
 
     </div>
