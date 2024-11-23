@@ -143,12 +143,19 @@ def process_person_picture(data_dir):
     return person_pictures
 
 
-def write_data_model_md(db_handler):
+def write_data_model_md(db_handler, erd_file):
+    erd_file = str(erd_file.relative_to(DOCS_DIR))
     tables = db_handler.read_table('_schema_tables').to_dict(orient="records")
     columns = db_handler.read_table('_schema_columns')
     columns = dict(list(columns.groupby("table_name")))
-    
-    md = []
+
+    md = [
+        '# Data Model',
+        '<p align="center">',
+        f'<img src="{erd_file}" width="800" title="ERD">',
+        '</p>',
+        '<br/>'        
+    ]
     for table in tables:
         table_name = table["table_name"]
         cols = ["  <dl>"]
@@ -161,6 +168,8 @@ def write_data_model_md(db_handler):
         
     with open(DOCS_DIR / "data_model.md", "w") as fh:
         fh.write("\n".join(md))
+
+
 
 
 
@@ -232,6 +241,7 @@ if __name__ == "__main__":
 
     exclude_tables=["_schema_tables", "_schema_columns"]
     eralchemy.render_er(f"sqlite:///{db_file}", str(data_dir / "erd.png"), exclude_tables=exclude_tables)
-    eralchemy.render_er(f"sqlite:///{db_file}", str("docs/images/erd.png"), exclude_tables=exclude_tables)
+    erd_file = DOCS_DIR / "images/erd.png"
+    eralchemy.render_er(f"sqlite:///{db_file}", str(erd_file), exclude_tables=exclude_tables)
 
-    write_data_model_md(db_handler)
+    write_data_model_md(db_handler, erd_file)

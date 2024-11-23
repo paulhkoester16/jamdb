@@ -1,3 +1,8 @@
+# Data Model
+<p align="center">
+<img src="images/erd.png" width="800" title="ERD">
+</p>
+<br/>
 <div>
   <h2>Chart</h2>
   Links to charts for songs.<br/>
