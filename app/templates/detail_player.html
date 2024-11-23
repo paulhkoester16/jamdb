@@ -12,7 +12,8 @@
       <div class="col-lg-6">
         <div class="list-group">
           {% for pic in person["personPictures"] %}
-            <img src="{{ url_for('static', filename=pic['link']) }}" class="img-fluid" alt="Pic of {{ public_name }}">
+            <img  class="img-fluid" src="{{ url_for('static', filename=pic['link']) }}"
+                alt="Pic of {{ public_name }}" height="400" />
           {% endfor %}            
           <a href="#" class="list-group-item">
             <h4>Full name</h4>
@@ -26,22 +27,16 @@
   
         {% if person["contacts"]|length > 0 %}
           <h3>Contact Informations</h3>
-          {% for contact_type, contact_infos in person["public_contacts_by_type"].items() %}
-            {% if contact_infos|length > 0 %}
-              <h4>{{ contact_type }}</h4>
+          {% for contact_infos in person["contacts_by_type"] %}
+              <h4>{{ contact_infos['contactTypeDisplayName'] }}</h4>
               <div class="list-group">
-                {% for contact in contact_infos %}
-                  {% if contact.get("link", "") != "" %}
-                    <a href="{{ contact['link'] }}" class="list-group-item">
-                      {{ contact['link'] }}
-                    </a>
-                  {% endif %}
-                  {% if contact.get("contactInfo", "") is not none and contact.get("contactInfo", "") != "" %}
-                    {{ contact['contactType'] }}:  {{ contact['contactInfo'] }}
-                  {% endif %}                  
+                {% for contact in contact_infos['contacts'] %}
+                  {% set contact_link = contact.get("link", "#") %}
+                  <a href="{{ contact_link }}" class="list-group-item">
+                    {{ contact['displayName'] }}
+                  </a>
                 {% endfor %}
               </div>
-            {% endif %}
           {% endfor %}
         {% endif %}
 
