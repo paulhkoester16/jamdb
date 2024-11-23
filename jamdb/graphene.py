@@ -95,11 +95,17 @@ def _create_qraphene_objects(model_classes):
         class Meta:
             model = model_classes["Composer"]
 
-    
+
     @register_gql("contact")
     class ContactGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Contact"]
+
+
+    @register_gql("contact_type")
+    class ContactTypeGQL(SQLAlchemyObjectType):
+        class Meta:
+            model = model_classes["ContactType"]
     
 
     @register_gql("event_gen")
@@ -108,7 +114,7 @@ def _create_qraphene_objects(model_classes):
         class Meta:
             model = model_classes["EventGen"]
 
-    
+
     @register_gql("event_occ")
     @add_for_collections("song_performs", lambda: SongPerformGQL)
     class EventOccGQL(SQLAlchemyObjectType):
@@ -176,6 +182,12 @@ def _create_qraphene_objects(model_classes):
             return f"{root.root} {root.mode.mode}"
 
 
+    @register_gql("link_source")
+    class LinkSourceGQL(SQLAlchemyObjectType):
+        class Meta:
+            model = model_classes["LinkSource"]
+
+    
     @register_gql("mode")
     @add_for_collections("keys", lambda: KeyGQL)
     class ModeGQL(SQLAlchemyObjectType):
@@ -337,8 +349,8 @@ def _create_qraphene_objects(model_classes):
     class SongGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Song"]
-
-
+        
+    
     @register_gql("song_learn")
     class SongLearnGQL(SQLAlchemyObjectType):
         class Meta:

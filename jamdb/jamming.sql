@@ -101,11 +101,11 @@ CREATE TABLE Person (
 CREATE TABLE PersonPicture (
 	id	TEXT	NOT NULL,
 	person_id	TEXT	NOT NULL,
-	source	TEXT	NOT NULL,
+	source_id	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (person_id) REFERENCES Person (id),
-	FOREIGN KEY (source) REFERENCES LinkSource (id)
+	FOREIGN KEY (source_id) REFERENCES LinkSource (id)
 );
 
 CREATE TABLE ContactType (
@@ -119,13 +119,13 @@ CREATE TABLE ContactType (
 CREATE TABLE Contact (
 	id	TEXT	NOT NULL,
 	person_id	TEXT	NOT NULL,
-	contact_type	TEXT	NOT NULL,
+	contact_type_id	TEXT	NOT NULL,
 	contact_info	TEXT	DEFAULT "",
 	link	TEXT	DEFAULT "",
     private	BOOLEAN,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (person_id) REFERENCES Person (id)
-	FOREIGN KEY (contact_type) REFERENCES ContactType (id)    
+	FOREIGN KEY (contact_type_id) REFERENCES ContactType (id)    
 );
 
 CREATE TABLE Genre (
@@ -230,23 +230,23 @@ CREATE TABLE SongLearn (
 CREATE TABLE RefRec (
 	id	TEXT	NOT NULL,
 	song_id	TEXT	NOT NULL,
-	source	TEXT	NOT NULL,
+	source_id	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",
 	PRIMARY KEY	(id),
 	FOREIGN KEY (song_id) REFERENCES Song (id),
-	FOREIGN KEY (source) REFERENCES LinkSource (id)
+	FOREIGN KEY (source_id) REFERENCES LinkSource (id)
 );
 
 CREATE TABLE Chart (
 	id	TEXT	NOT NULL,
 	song_id	TEXT	NOT NULL,
-	source	TEXT	NOT NULL,
+	source_id	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",    
 	PRIMARY KEY	(id),
 	FOREIGN KEY (song_id) REFERENCES Song (id),
-	FOREIGN KEY (source) REFERENCES LinkSource (id)
+	FOREIGN KEY (source_id) REFERENCES LinkSource (id)
 );
 
 CREATE TABLE SetlistSong (
@@ -286,12 +286,12 @@ CREATE TABLE SongPerformer (
 CREATE TABLE PerformanceVideo (
 	id	TEXT	NOT NULL,
 	song_perform_id	TEXT	NOT NULL,
-	source	TEXT	NOT NULL,
+	source_id	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",
     PRIMARY KEY (id),
 	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id),
-	FOREIGN KEY (source) REFERENCES LinkSource (id)
+	FOREIGN KEY (source_id) REFERENCES LinkSource (id)
 );
 
 
@@ -327,14 +327,14 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Chart", "id", "Unique ID of the Chart."),
 	("Chart", "song_id", "ID of the Chart's song"),
-	("Chart", "source", "Source of the chart, e.g., web link or iReal, etc."),
+	("Chart", "source_id", "Unique ID of the chart's source, e.g., web link or ireal, etc."),
 	("Chart", "link", "Link, etc., url or uri"),
 	("Chart", "display_name", "Human readable name of link"),
 	("Composer", "id", "Unique ID for Composer."),
 	("Composer", "composer", "Composer name."),
 	("Contact", "id", "Unique ID for Contact info."),
 	("Contact", "person_id", "ID for the Contact's person."),
-	("Contact", "contact_type", "Unique id for the kind of contact, e.g., facebook vs youtube etc."),
+	("Contact", "contact_type_id", "Unique id for the kind of contact, e.g., facebook vs youtube etc."),
 	("Contact", "contact_info", "Free form text contact info, like phone numbers, etc."),
 	("Contact", "link", "Hyperlink, e.g., for Facebook etc."),
 	("Contact", "private", "Whether the contact info should remain private"),
@@ -366,7 +366,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Mode", "mode", "Descriptive name of the mode."),
 	("PerformanceVideo", "id", "Unique ID of the PerformanceVideo"),
 	("PerformanceVideo", "song_perform_id", "ID of the SongPerform"),
-	("PerformanceVideo", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("PerformanceVideo", "source_id", "Unique ID of the recording's source, e.g., youtube or spotify, etc."),
 	("PerformanceVideo", "link", "Link, etc., url or uri"),
 	("PerformanceVideo", "display_name", "Human readable name of link"),    
 	("Person", "id", "Unique ID for Person."),
@@ -377,11 +377,11 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
 	("PersonPicture", "id", "Unique ID for PersonPicture."),
 	("PersonPicture", "person_id", "ID for picture's person."),
-	("PersonPicture", "source", "Source of the photo, e.g, jpg vs png etc."),
+	("PersonPicture", "source_id", "Unique ID of photo's source, e.g, jpg vs png etc."),
 	("PersonPicture", "link", "Link to picture."),
 	("RefRec", "id", "Unique ID of the RefRec."),
 	("RefRec", "song_id", "ID of the RefRec's song"),
-	("RefRec", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
+	("RefRec", "source_id", "Unique ID of the recording's source type, e.g., YouTube or Spotify, etc."),
 	("RefRec", "link", "Link, etc., url or uri"),
 	("RefRec", "display_name", "Human readable name of link"),
 	("Setlist", "id", "Unique ID for SetList."),
