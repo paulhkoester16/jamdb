@@ -334,7 +334,7 @@ def _create_index(graphene_session):
         key=lambda x: x["publicName"].lower()
     )
     result["songs"] = sorted(
-        result["songs"].lower(),
+        result["songs"],
         key=lambda x: x["song"].lower()
     )
     result["venues"] = sorted(
