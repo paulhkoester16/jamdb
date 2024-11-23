@@ -25,7 +25,7 @@
           </a>
         </div>
   
-        {% if person["contacts"]|length > 0 %}
+        {% if person["contacts_by_type"]|length > 0 %}
           <h3>Contact Informations</h3>
           {% for contact_infos in person["contacts_by_type"] %}
               <h4>{{ contact_infos['contactTypeDisplayName'] }}</h4>
