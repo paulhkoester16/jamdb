@@ -86,6 +86,9 @@ def _create_qraphene_objects(model_classes):
         class Meta:
             model = model_classes["Chart"]
 
+        def resolve_display_name(root, info):
+            return root.display_name or root.link
+    
 
     @register_gql("composer")
     @add_for_collections("songs", lambda: SongGQL)
@@ -191,6 +194,9 @@ def _create_qraphene_objects(model_classes):
     class PerformanceVideoGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["PerformanceVideo"]
+
+        def resolve_display_name(root, info):
+            return root.display_name or root.link
 
 
     @register_gql("person")
@@ -298,6 +304,9 @@ def _create_qraphene_objects(model_classes):
     class RefRecGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["RefRec"]
+
+        def resolve_display_name(root, info):
+            return root.display_name or root.link
 
 
     @register_gql("setlist")

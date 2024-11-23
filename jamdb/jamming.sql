@@ -203,6 +203,7 @@ CREATE TABLE RefRec (
 	song_id	TEXT	NOT NULL,
 	source	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
+	display_name	TEXT	DEFAULT "",
 	PRIMARY KEY	(id),
 	FOREIGN KEY (song_id) REFERENCES Song (id)
 );
@@ -212,6 +213,7 @@ CREATE TABLE Chart (
 	song_id	TEXT	NOT NULL,
 	source	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
+	display_name	TEXT	DEFAULT "",    
 	PRIMARY KEY	(id),
 	FOREIGN KEY (song_id) REFERENCES Song (id)
 );
@@ -255,6 +257,7 @@ CREATE TABLE PerformanceVideo (
 	song_perform_id	TEXT	NOT NULL,
 	source	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
+	display_name	TEXT	DEFAULT "",
     PRIMARY KEY (id),
 	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id)
 );
@@ -291,7 +294,8 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Chart", "id", "Unique ID of the Chart."),
 	("Chart", "song_id", "ID of the Chart's song"),
 	("Chart", "source", "Source of the chart, e.g., web link or iReal, etc."),
-	("Chart", "link", "Link, etc., url or uri"),    
+	("Chart", "link", "Link, etc., url or uri"),
+	("Chart", "display_name", "Human readable name of link"),
 	("Composer", "id", "Unique ID for Composer."),
 	("Composer", "composer", "Composer name."),
 	("Contact", "id", "Unique ID for Contact info."),
@@ -323,7 +327,8 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("PerformanceVideo", "id", "Unique ID of the PerformanceVideo"),
 	("PerformanceVideo", "song_perform_id", "ID of the SongPerform"),
 	("PerformanceVideo", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
-	("PerformanceVideo", "link", "Link, etc., url or uri"),    
+	("PerformanceVideo", "link", "Link, etc., url or uri"),
+	("PerformanceVideo", "display_name", "Human readable name of link"),    
 	("Person", "id", "Unique ID for Person."),
 	("Person", "public_name", "Person's publicly used name, typically their first name and last initial."),
 	("Person", "full_name", "Person's full name."),
@@ -334,6 +339,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("RefRec", "song_id", "ID of the RefRec's song"),
 	("RefRec", "source", "Source of the recording, e.g., YouTube or Spotify, etc."),
 	("RefRec", "link", "Link, etc., url or uri"),
+	("RefRec", "display_name", "Human readable name of link"),
 	("Setlist", "id", "Unique ID for SetList."),
 	("Setlist", "setlist", "Name of the SetList."),
 	("Setlist", "description", "Description of the SetList."),
