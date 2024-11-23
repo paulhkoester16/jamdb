@@ -40,12 +40,13 @@
       <div class="col-lg-6">
         {% for video in song['performanceVideos'] %}
           {% if video.get('embeddableLink', '') != '' %}
-            <iframe style="border-radius:12px" src="{{ video['embeddableLink'] }}" width="100%" height="300" frameBorder="0"
+            <iframe style="border-radius:12px" src="{{ video['embeddableLink'] }}" width="100%" height="350" frameBorder="0"
                 allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>          
-          {% endif %}
+          {% else %}
           <a href="{{ video['link'] }}" class="list-group-item">
             {{ video['link'] }}
           </a>
+          {% endif %}
         {% endfor %}
 
       </div>
