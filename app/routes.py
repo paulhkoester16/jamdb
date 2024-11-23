@@ -61,7 +61,10 @@ def overview_event_occs():
         }
         """
     ).data["eventOccs"]
-    summaries = sorted(summaries, key=lambda x: (x["eventgen"]["name"], x["date"]))
+    summaries = sorted(
+        summaries,
+        key=lambda x: (x["eventgen"]["name"].lower(), x["date"].lower())
+    )
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -80,7 +83,7 @@ def overview_event_series():
     ).data["eventGens"]
     for event in summaries:
         event["host"] = event.pop("person")
-    summaries = sorted(summaries, key=lambda x: x["name"])
+    summaries = sorted(summaries, key=lambda x: x["name"].lower())
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -98,7 +101,7 @@ def overview_players():
         }
         """
     ).data["persons"]
-    summaries = sorted(summaries, key=lambda x: x["combinedName"])
+    summaries = sorted(summaries, key=lambda x: x["combinedName"].lower())
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -116,7 +119,7 @@ def overview_songs():
         }
         """
     ).data["songs"]
-    summaries = sorted(summaries, key=lambda x: x["song"])
+    summaries = sorted(summaries, key=lambda x: x["song"].lower())
     return my_render_template(g_session, page_name, summaries=summaries)
 
     
@@ -137,7 +140,11 @@ def overview_performance_videos():
         }
         """
     ).data["performanceVideos"]
-    summaries = sorted(summaries, key=lambda x: (x["songperform"]["song"]["song"], x["songperform"]["eventocc"]["date"]))
+    summaries = sorted(
+        summaries,
+        key=lambda x: (x["songperform"]["song"]["song"].lower(), x["songperform"]["eventocc"]["date"].lower())
+    )
+    
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -155,7 +162,9 @@ def overview_performed_songs():
           }
         }"""
     ).data["songPerforms"]
-    summaries = sorted(summaries, key=lambda x: (x["song"]["song"], x["eventocc"]["date"]))
+    summaries = sorted(
+        summaries, key=lambda x: (x["song"]["song"].lower(), x["eventocc"]["date"].lower())
+    )
     for song in summaries:
         song["performanceVideos"] = sort_links(song["performanceVideos"])
     return my_render_template(g_session, page_name, summaries=summaries)
@@ -308,12 +317,29 @@ def _create_index(graphene_session):
         songs { id, song }
         venues { id, venue }
     }""").data
-    result["eventGens"] = sorted(result["eventGens"], key=lambda x: x["name"])
-    result["eventOccs"] = sorted(result["eventOccs"], key=lambda x: (x["eventgen"]["name"], x["date"]))
-    result["songPerforms"] = sorted(result["songPerforms"], key=lambda x: (x["song"]["song"], x["eventocc"]["date"]))
-    result["persons"] = sorted(result["persons"], key=lambda x: x["publicName"])
-    result["songs"] = sorted(result["songs"], key=lambda x: x["song"])
-    result["venues"] = sorted(result["venues"], key=lambda x: x["venue"])
+    result["eventGens"] = sorted(
+        result["eventGens"],
+        key=lambda x: x["name"].lower()
+    )
+    result["eventOccs"] = sorted(
+        result["eventOccs"],
+        key=lambda x: (x["eventgen"]["name"].lower(), x["date"].lower())
+    )
+    result["songPerforms"] = sorted(
+        result["songPerforms"],
+        key=lambda x: (x["song"]["song"].lower(), x["eventocc"]["date"].lower())
+    )
+    result["persons"] = sorted(
+        result["persons"],
+        key=lambda x: x["publicName"].lower()
+    )
+    result["songs"] = sorted(
+        result["songs"].lower(),
+        key=lambda x: x["song"].lower()
+    )
+    result["venues"] = sorted(
+        result["venues"], key=lambda x: x["venue"].lower()
+    )
     result = {
         entity_name: [list(row.values()) for row in key_vals]
         for entity_name, key_vals in result.items()
