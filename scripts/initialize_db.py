@@ -17,11 +17,13 @@ import hashlib
 
 REPO_ROOT = Path("./").absolute()
 sys.path.append(str(REPO_ROOT))
+
 from jamdb.db import DBHandler
 from jamdb.transformations import format_id_as_str
 from jamdb.globals import ME_ID
 
 SQL_FILE = Path("jamdb/jamming.sql")
+DOCS_DIR = Path("docs")
 SRC_DATA_DIR = REPO_ROOT / "data" / "source_data"
 ODS_FILE = SRC_DATA_DIR / "public.ods"
 DATA_SUB_DIRS = ["people", "charts"]
@@ -124,6 +126,7 @@ def process_charts(data_dir, charts_df):
     charts_df = pd.concat([charts_df, ireal_charts])
     return charts_df
 
+
 def process_person_picture(data_dir):
     person_pictures = []
     for person_dir in (data_dir / "people").glob("*"):
@@ -138,6 +141,27 @@ def process_person_picture(data_dir):
     person_pictures = pd.DataFrame(person_pictures)
     person_pictures["id"] = person_pictures.apply(row_to_hash, axis=1)
     return person_pictures
+
+
+def write_data_model_md(db_handler):
+    tables = db_handler.read_table('_schema_tables').to_dict(orient="records")
+    columns = db_handler.read_table('_schema_columns')
+    columns = dict(list(columns.groupby("table_name")))
+    
+    md = []
+    for table in tables:
+        table_name = table["table_name"]
+        cols = ["  <dl>"]
+        for _, col in columns[table_name].iterrows():
+            cols.append(f"    <dt><b>{col['column']}</b></dt><dd><i>{col['description']}</i></dd></dt>")
+        cols.append("  </dl>")
+        cols = "\n".join(cols)    
+    
+        md.append(f"<div>\n  <h2>{table_name}</h2>\n  {table['description']}<br/>\n{cols}\n</div>")
+        
+    with open(DOCS_DIR / "data_model.md", "w") as fh:
+        fh.write("\n".join(md))
+
 
 
 if __name__ == "__main__":
@@ -209,3 +233,5 @@ if __name__ == "__main__":
     exclude_tables=["_schema_tables", "_schema_columns"]
     eralchemy.render_er(f"sqlite:///{db_file}", str(data_dir / "erd.png"), exclude_tables=exclude_tables)
     eralchemy.render_er(f"sqlite:///{db_file}", str("docs/images/erd.png"), exclude_tables=exclude_tables)
+
+    write_data_model_md(db_handler)
