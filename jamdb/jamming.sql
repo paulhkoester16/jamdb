@@ -8,6 +8,8 @@ DROP TABLE IF EXISTS [Chart];
 
 DROP TABLE IF EXISTS [Composer];
 
+DROP TABLE IF EXISTS [ContactType];
+
 DROP TABLE IF EXISTS [Contact];
 
 DROP TABLE IF EXISTS [EventGen];
@@ -19,6 +21,8 @@ DROP TABLE IF EXISTS [Genre];
 DROP TABLE IF EXISTS [Instrument];
 
 DROP TABLE IF EXISTS [Key];
+
+DROP TABLE IF EXISTS [LinkSource];
 
 DROP TABLE IF EXISTS [Mode];
 
@@ -64,6 +68,11 @@ CREATE TABLE _schema_columns (
 	FOREIGN KEY (table_name) REFERENCES _schema_tables (table_name)
 );
 
+CREATE TABLE LinkSource (
+    id	TEXT	NOT NULL,
+	rank	INT	NOT NULL	UNIQUE,
+	PRIMARY KEY	(id)
+);
 
 CREATE TABLE Composer (
 	id	TEXT	NOT NULL,
@@ -92,9 +101,19 @@ CREATE TABLE Person (
 CREATE TABLE PersonPicture (
 	id	TEXT	NOT NULL,
 	person_id	TEXT	NOT NULL,
+	source	TEXT	NOT NULL,
 	link	TEXT	NOT NULL	UNIQUE,
 	PRIMARY KEY	(id),
-	FOREIGN KEY (person_id) REFERENCES Person (id)
+	FOREIGN KEY (person_id) REFERENCES Person (id),
+	FOREIGN KEY (source) REFERENCES LinkSource (id)
+);
+
+CREATE TABLE ContactType (
+	id	TEXT	NOT NULL,
+	display_name	TEXT	NOT NULL	UNIQUE,
+	rank	INTEGER	NOT NULL	UNIQUE,
+    private	BOOLEAN	NOT NULL,
+	PRIMARY KEY	(id)
 );
 
 CREATE TABLE Contact (
@@ -103,9 +122,10 @@ CREATE TABLE Contact (
 	contact_type	TEXT	NOT NULL,
 	contact_info	TEXT	DEFAULT "",
 	link	TEXT	DEFAULT "",
-    private	BOOLEAN	DEFAULT 1,
+    private	BOOLEAN,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (person_id) REFERENCES Person (id)
+	FOREIGN KEY (contact_type) REFERENCES ContactType (id)    
 );
 
 CREATE TABLE Genre (
@@ -214,7 +234,8 @@ CREATE TABLE RefRec (
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",
 	PRIMARY KEY	(id),
-	FOREIGN KEY (song_id) REFERENCES Song (id)
+	FOREIGN KEY (song_id) REFERENCES Song (id),
+	FOREIGN KEY (source) REFERENCES LinkSource (id)
 );
 
 CREATE TABLE Chart (
@@ -224,7 +245,8 @@ CREATE TABLE Chart (
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",    
 	PRIMARY KEY	(id),
-	FOREIGN KEY (song_id) REFERENCES Song (id)
+	FOREIGN KEY (song_id) REFERENCES Song (id),
+	FOREIGN KEY (source) REFERENCES LinkSource (id)
 );
 
 CREATE TABLE SetlistSong (
@@ -268,7 +290,8 @@ CREATE TABLE PerformanceVideo (
 	link	TEXT	NOT NULL	UNIQUE,
 	display_name	TEXT	DEFAULT "",
     PRIMARY KEY (id),
-	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id)
+	FOREIGN KEY (song_perform_id) REFERENCES SongPerform (id),
+	FOREIGN KEY (source) REFERENCES LinkSource (id)
 );
 
 
@@ -278,11 +301,13 @@ INSERT INTO _schema_tables (table_name, description) VALUES
 	("Chart", "Links to charts for songs."),    
 	("Composer", "Composer information"),
 	("Contact", "Contact information for a person, e.g., social media links."),
+	("ContactType", "Contact information type, e.g., facebook vs linktree etc."),
 	("EventGen", "Recurring events, including event's venue and the recurrence pattern.  Due to the data design, even one-off gigs are defined in EventGen."),
 	("EventOcc", "Specific events, including the event's specific date and EventGen that it derives from."),
 	("Genre", "Coarse genre information. Genres are at the level of 'Jazz' vs 'Blues', etc.  See also `SubGrenre`."),
 	("Instrument", "Instrument information."),
 	("Key", "Key signature / mode information."),
+    ("LinkSource", "Information about the type of link"),
 	("Mode", "Information about mode."),
 	("PerformanceVideo", "Video link for a performed song."),
 	("Person", "Public Information about a person."),
@@ -309,10 +334,14 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Composer", "composer", "Composer name."),
 	("Contact", "id", "Unique ID for Contact info."),
 	("Contact", "person_id", "ID for the Contact's person."),
-	("Contact", "contact_type", "The kind of contact, e.g., Facebook vs YouTube etc."),
+	("Contact", "contact_type", "Unique id for the kind of contact, e.g., facebook vs youtube etc."),
 	("Contact", "contact_info", "Free form text contact info, like phone numbers, etc."),
 	("Contact", "link", "Hyperlink, e.g., for Facebook etc."),
 	("Contact", "private", "Whether the contact info should remain private"),
+    ("ContactType", "id", "ID for the contact type"),
+    ("ContactType", "display_name", "Human readable name of the contact type"),
+    ("ContactType", "rank", "For ordering links by source. e.g., linktree before facebook, etc."),
+	("ContactType", "private", "Whether the contact info should remain private"),    
 	("EventGen", "id", "Unique ID for EventGen."),
 	("EventGen", "name", "Name of EventGen, e.g., 'Jazz Madcats'"),
 	("EventGen", "genre_id", "ID of the genre, to distinguish between 'Blues' jam vs 'Open Mic', etc."),
@@ -331,6 +360,8 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("Key", "id", "Unique ID for key."),
 	("Key", "root", "Root note of key, e.g, “Bb” or F#”, etc."),
 	("Key", "mode_id", "ID of the mode."),
+    ("LinkSource", "id", "Unique ID of the link type"),
+    ("LinkSource", "rank", "For ordering links by source. e.g., web links before images, etc."),
 	("Mode", "id", "Unique ID of the mode."),
 	("Mode", "mode", "Descriptive name of the mode."),
 	("PerformanceVideo", "id", "Unique ID of the PerformanceVideo"),
@@ -346,6 +377,7 @@ INSERT INTO _schema_columns (table_name, column, description) VALUES
 	("PersonInstrument", "instrument_id", "ID of the Instrument."),
 	("PersonPicture", "id", "Unique ID for PersonPicture."),
 	("PersonPicture", "person_id", "ID for picture's person."),
+	("PersonPicture", "source", "Source of the photo, e.g, jpg vs png etc."),
 	("PersonPicture", "link", "Link to picture."),
 	("RefRec", "id", "Unique ID of the RefRec."),
 	("RefRec", "song_id", "ID of the RefRec's song"),

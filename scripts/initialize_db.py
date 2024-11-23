@@ -87,7 +87,7 @@ def insert_for_song_performance(db_handler, song_perform, me_id=ME_ID):
                     {
                         "id": len(videos),                        
                         "song_perform_id": sp_id,
-                        "source": "YouTube",
+                        "source": "youtube",
                         "link": val
                     }
                 )
@@ -130,7 +130,10 @@ def process_person_picture(data_dir):
         person_id = person_dir.stem
         for person_file in person_dir.glob("*"):
             link = str(person_file.relative_to(data_dir))
-            person_pictures.append({"person_id": person_id, "link": link})
+            source = person_file.suffix
+            if source.startswith("."):
+                source = source[1:]
+            person_pictures.append({"person_id": person_id, "link": link, "source": source})
 
     person_pictures = pd.DataFrame(person_pictures)
     person_pictures["id"] = person_pictures.apply(row_to_hash, axis=1)
