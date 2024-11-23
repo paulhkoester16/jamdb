@@ -6,6 +6,12 @@ from flask import Flask, render_template
 from jamdb.globals import ME_ID, DATA_DIR, DB_FILE
 from jamdb.graphene import GrapheneSQLSession
 
+REDACT_PRIVATE = True     # this should be an env var
+
+def sort_links(links):
+    links = sorted(links, key=lambda row: row["linksource"]["rank"])
+    return links
+
 
 def init_graphene_session():
     return GrapheneSQLSession.from_sqlite_file(DB_FILE)
@@ -122,7 +128,7 @@ def overview_performance_videos():
         """
         query {
           performanceVideos {
-            id, source, link, embeddableLink,
+            id, link, embeddableLink,
             songperform {
               id, song { song }, eventocc { id, name, date },
               players { person {id, publicName}, instrumentList }
@@ -145,11 +151,13 @@ def overview_performed_songs():
           songPerforms {
             id, songPerformName, song { id, song }, eventocc { id, name, date },
             players { person {id, publicName}, instrumentList },
-            performanceVideos { songPerformId, source, link, embeddableLink}
+            performanceVideos { songPerformId, sourceId, linksource {rank}, link, embeddableLink, displayName}
           }
         }"""
     ).data["songPerforms"]
     summaries = sorted(summaries, key=lambda x: (x["song"]["song"], x["eventocc"]["date"]))
+    for song in summaries:
+        song["performanceVideos"] = sort_links(song["performanceVideos"])
     return my_render_template(g_session, page_name, summaries=summaries)
 
 
@@ -200,7 +208,7 @@ def detail_performed_song(song_perform_id):
           songPerform (id: $id) {
             id, songPerformName, song { id, song }, eventocc { id, name },
             players { person {id, publicName}, instrumentList },
-            performanceVideos { songPerformId, source, link, embeddableLink}
+            performanceVideos { songPerformId, link, embeddableLink}
           }
         }""",
         variables={"id": song_perform_id}
@@ -218,13 +226,15 @@ def detail_song(song_id):
           song(id: $id) {
             id, song, key { keyName }, subgenre { subgenreName }
             songPerforms { id, eventocc { name } }
-            charts { source, link, embeddableLink, displayName }
-            refRecs { link, embeddableLink }
+            charts { sourceId, linksource {rank}, link, embeddableLink, displayName }
+            refRecs { sourceId, linksource {rank}, link, embeddableLink, displayName }
           }
         }
         """,
         variables={"id": song_id}
     ).data["song"]
+    song["charts"] = sort_links(song["charts"])
+    song["refRecs"] = sort_links(song["refRecs"])
     return my_render_template(g_session, page_name, song=song)
 
 
@@ -237,7 +247,7 @@ def detail_player(person_id):
         query getPerson($id: ID, $otherPersonId: ID) {
           person (id: $id) {
             id, fullName, publicName, instrumentList
-            contacts { id, contactType, contactInfo, link, private },
+            contacts { id, contactTypeId, contacttype {displayName, rank}, link, private, displayName },
             eventsAttended { id, name, date },
             songsPerformedWith(otherPersonId: $otherPersonId) { id, songPerformName },
             songsPerformedWithout(otherPersonId: $otherPersonId) { id, songPerformName },
@@ -247,11 +257,25 @@ def detail_player(person_id):
         """,
         variables={"id": person_id, "otherPersonId": ME_ID}
     ).data["person"]
-    public_contacts_by_type = defaultdict(list)
+    
+    contacts_by_type = defaultdict(list)
     for contact in person["contacts"]:
-        if not contact["private"]:
-            public_contacts_by_type[contact["contactType"]].append(contact)
-    person["public_contacts_by_type"] = public_contacts_by_type
+        if REDACT_PRIVATE and contact["private"]:
+            continue
+        contacts_by_type[contact["contactTypeId"]].append(contact)
+
+    contacts_by_type = [
+        {
+            "contactTypeId": contact_type[0]["contactTypeId"],
+            "contactTypeDisplayName": contact_type[0]["contacttype"]["displayName"],
+            "contactTypeRank": contact_type[0]["contacttype"]["rank"],
+            "contacts": contact_type
+        }
+        for contact_type in contacts_by_type.values()
+        if len(contact_type) > 0
+    ]
+    contacts_by_type = sorted(contacts_by_type, key=lambda x: x["contactTypeRank"])
+    person["contacts_by_type"] = contacts_by_type
 
     return my_render_template(g_session, page_name, person=person)
 
