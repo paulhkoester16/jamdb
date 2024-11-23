@@ -44,10 +44,11 @@
               {% for video in summary["performanceVideos"] %}    
                 {% if video.get('embeddableLink', '') != '' %}
                   <iframe loading="lazy" height="100%" src="{{ video['embeddableLink'] }}"></iframe>
-                {% endif %}
+                {% else %}
                 <a href="{{ video['link'] }}" class="list-group-item">
-                  {{ video['link'] }}
+                  {{ video['displayName'] }}
                 </a>
+                {% endif %}
               {% endfor %}
             </td>
           </tr>

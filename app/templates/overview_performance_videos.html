@@ -21,10 +21,11 @@
             <td class="list-group">
               {% if summary.get('embeddableLink', '') != '' %}
                 <iframe loading="lazy" height="100%" src="{{ summary['embeddableLink'] }}"></iframe>
-              {% endif %}
+              {% else %}
               <a href="{{ summary['link'] }}" class="list-group-item">
                 {{ summary['link'] }}
               </a>
+              {% endif %}
             </td>
             <td class="list-group">
               {% set perf = summary['songperform'] %}
