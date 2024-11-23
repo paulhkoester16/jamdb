@@ -51,7 +51,7 @@ def _create_qraphene_objects(model_classes):
 
         def _factory_resolver():
             def inner_func(root, info):
-                return create_embed_link(root.source, root.link)
+                return create_embed_link(root.source_id, root.link)
             return inner_func
         
         def inner_function(cls):
@@ -100,6 +100,29 @@ def _create_qraphene_objects(model_classes):
     class ContactGQL(SQLAlchemyObjectType):
         class Meta:
             model = model_classes["Contact"]
+
+        link = graphene.Field(lambda: graphene.String)
+        display_name = graphene.Field(lambda: graphene.String)
+
+        def resolve_link(root, info):
+            link = root.link or ""
+            if link == "":
+                link = "#"
+            return link
+        
+        def resolve_display_name(root, info):
+            # DB should defaulting these missings into "", but they are coming in as None?
+            # Is this problem with our SQLite declarations or how Graphene interprets those,
+            # or with how the ODS reader interprets?
+            display_name = root.display_name or ""
+            if display_name == "":
+                link = root.link or ""
+                if link != "":
+                    display_name = root.link
+                else:
+                    contact_info = root.contact_info or ""
+                    display_name = contact_info
+            return display_name.strip()
 
 
     @register_gql("contact_type")
