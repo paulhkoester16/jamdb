@@ -122,6 +122,7 @@ CREATE TABLE Contact (
 	contact_type_id	TEXT	NOT NULL,
 	contact_info	TEXT	DEFAULT "",
 	link	TEXT	DEFAULT "",
+    display_name	TEXT	DEFAULT "",
     private	BOOLEAN,
 	PRIMARY KEY	(id),
 	FOREIGN KEY (person_id) REFERENCES Person (id)
