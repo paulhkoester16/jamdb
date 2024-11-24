@@ -340,7 +340,7 @@ def _create_qraphene_objects(model_classes):
             model = model_classes["PersonPicture"]
 
 
-    @register_gql("ref_ref")
+    @register_gql("ref_rec")
     @add_embeddable_link()
     class RefRecGQL(SQLAlchemyObjectType):
         class Meta:
