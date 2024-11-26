@@ -78,6 +78,8 @@ class DBHandler:
         return fk_constraints
     
     def insert(self, table_name, rows):
+        if len(rows) == 0:
+            return
         try:
             with self.Session.begin() as session:
                 table = self.tables()[table_name]
