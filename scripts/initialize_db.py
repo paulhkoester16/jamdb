@@ -3,17 +3,19 @@
 #   as the system of record, but eventually, we'll want to use a persisitent
 #   DB as the system of record.
 #   Until then, we should only modify the ODS files, and periodically rebuild.
-from pathlib import Path
-import copy
+
 import sys
-import json
+import os
 import argparse
+import hashlib
+
+from pathlib import Path
 from shutil import copytree, rmtree
-import pandas as pd
-from pandas_ods_reader import read_ods
 import sqlalchemy
 import eralchemy
-import hashlib
+import pandas as pd
+
+from pandas_ods_reader import read_ods
 
 REPO_ROOT = Path("./").absolute()
 sys.path.append(str(REPO_ROOT))
@@ -26,7 +28,7 @@ SQL_FILE = Path("jamdb/jamming.sql")
 DOCS_DIR = Path("docs")
 SRC_DATA_DIR = REPO_ROOT / "data" / "source_data"
 ODS_FILE = SRC_DATA_DIR / "public.ods"
-DATA_SUB_DIRS = ["people", "charts"]
+DATA_SUB_DIRS = ["people"]
 
 
 def row_to_hash(row):
@@ -48,10 +50,12 @@ def _parse_sql_file(sql_file):
 
 def _sorted_table_names():
     # When inserting, need to insert in correct order, regarding FKs
-    # Here I assume the order of tabels in the sql file addresses the order    
+    # Here I assume the order of tabels in the sql file addresses the order
+    
     sql_commands = _parse_sql_file(SQL_FILE)
     table_names = [x.split(" ", 3)[2] for x in sql_commands if x.startswith("CREATE TABLE")]
     table_names = [x for x in table_names if not x.startswith("_")]
+    
     return table_names
 
 
@@ -100,33 +104,6 @@ def insert_for_song_performance(db_handler, song_perform, me_id=ME_ID):
     db_handler.insert("PerformanceVideo", videos)
 
 
-def process_charts(data_dir, charts_df):
-    ireal_charts = []
-    for song_dir in (data_dir / "charts").glob("*"):
-        for chart_file in song_dir.glob("*"):
-            chart = {"song_id": song_dir.stem}
-            if chart_file.suffix == ".pdf":
-                chart["source_id"] = "pdf"
-                chart["link"] = str(chart_file.relative_to(data_dir))
-                chart["display_name"] = chart_file.stem
-            elif chart_file.suffix == ".json" and chart_file.stem.endswith("_ireal"):
-                data = json.loads(chart_file.read_text())
-                chart["source_id"] = "ireal"
-                chart["link"] = data["i_real_href"]
-                chart["display_name"] = f"{data['song_name']} (click to download into iReal)"            
-            else:
-                print(f"Unkown chart format:  {chart_file}")
-                continue
-            ireal_charts.append(copy.deepcopy(chart))
-    ireal_charts = pd.DataFrame(ireal_charts)
-
-    ireal_charts["id"] = ireal_charts.apply(row_to_hash, axis=1)
-    print(f"    Original size of Charts df:  {df.shape}")
-    print(f"    Size of iReal Charts:        {ireal_charts.shape}")                
-    charts_df = pd.concat([charts_df, ireal_charts])
-    return charts_df
-
-
 def process_person_picture(data_dir):
     person_pictures = []
     for person_dir in (data_dir / "people").glob("*"):
@@ -170,9 +147,6 @@ def write_data_model_md(db_handler, erd_file):
         fh.write("\n".join(md))
 
 
-
-
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog='initialize_jam_db')
@@ -191,7 +165,8 @@ if __name__ == "__main__":
     force_rebuild = args.force_rebuild
 
     if force_rebuild:
-        db_file.unlink(missing_ok=True)
+        if db_file.exists():
+            os.remove(db_file)
         for sub_dir in DATA_SUB_DIRS:
             dir_ = data_dir / sub_dir
             print(dir_)
@@ -222,9 +197,6 @@ if __name__ == "__main__":
                 df = process_person_picture(data_dir)
             else:
                 df = read_ods(ODS_FILE, table_name)
-
-            if table_name == "Chart":
-                df = process_charts(data_dir, df)
 
             if table_name == "Venue":
                 df["zip"] = df["zip"].apply(format_id_as_str)
