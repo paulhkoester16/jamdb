@@ -210,7 +210,8 @@ def create_charts_from_ireal(db_handler, source_dir, output_data_dir):
     no_ireal_file = reports_dir / "song_ids_with_no_ireal_charts.txt"
 
     if len(no_ireal) > 0:
-        print(f"{len(no_ireal)} songs with no ireal chart.\nCheck {no_ireal_file}")
+        print(f"\n{len(no_ireal)} songs with no ireal chart.")
+        print(f"\tCheck {no_ireal_file}")
     
     with open(no_ireal_file, "w") as fh:
         fh.write("\n".join(no_ireal))

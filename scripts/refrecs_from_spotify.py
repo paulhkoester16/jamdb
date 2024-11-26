@@ -99,7 +99,10 @@ def simplify_tracks(tracks):
     ]
 
 
-def get_name_mapping(name_mapping_file, db_handler, songs_from_spotify):
+def get_name_mapping(name_mapping_file, db_handler, songs_from_spotify, output_data_dir):
+    reports_dir = output_data_dir / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    
     songs_in_jam_db = [
         {
             "id": row["id"],
@@ -115,7 +118,7 @@ def get_name_mapping(name_mapping_file, db_handler, songs_from_spotify):
     name_mapping = pd.read_csv(name_mapping_file).to_numpy().tolist()
     already_seen = {row[2] for row in name_mapping}
 
-    to_fix = []
+    in_spotify_no_jamdb_match = []
     for song in songs_from_spotify:
         if song["link"] in already_seen:
             continue
@@ -123,12 +126,40 @@ def get_name_mapping(name_mapping_file, db_handler, songs_from_spotify):
             db_song = songs_in_jam_db[song["normalized_name"]]
             song_id = db_song["id"]
             name_mapping.append([song_id, song["normalized_name"], song["link"]])
+            already_seen.update([song["link"]])
         else:
-            to_fix.append(["", song["normalized_name"], song["link"]])
-    to_fix = sorted(to_fix, key=lambda x: x[1])
+            in_spotify_no_jamdb_match.append(["", song["normalized_name"], song["link"]])
 
-    assert len(to_fix) == 0, to_fix
+    # === Report on songs in spotify playlist but no jamdb match =================
+    in_spotify_no_jamdb_match = pd.DataFrame(
+        in_spotify_no_jamdb_match,
+        columns=["song_id", "spotify_normalized_name", "link"]
+    ).sort_values("spotify_normalized_name")    
+
+    in_spotify_no_jamdb_match_file = reports_dir / "songs_in_spotify_but_no_jamdb_match.csv"
+
+    if len(in_spotify_no_jamdb_match) > 0:
+        print(f"\n{len(in_spotify_no_jamdb_match)} songs in spotify playlist but no match to jamdb.")
+        print(f"\tCheck {in_spotify_no_jamdb_match_file}")
+    in_spotify_no_jamdb_match.to_csv(in_spotify_no_jamdb_match_file, index=None)
+    # ============================================================================
+
+    # === Report on songs in jamdb but no spotify playlist =======================
+    ids_in_jamdb = {row["id"] for row in songs_in_jam_db.values()}
+    ids_matched_in_spotify = {row[0] for row in name_mapping}
+    in_jamdb_no_spotify = sorted(list(ids_in_jamdb.difference(ids_matched_in_spotify)))
+
+    in_jambd_no_spotify_match_file = reports_dir / "songs_in_jamdb_but_no_spotify_match.txt"
+    if len(in_jamdb_no_spotify) > 0:
+        print(f"\n{len(in_jamdb_no_spotify)} songs in jambd but no match in spotify playlist.")
+        print(f"\tCheck {in_jambd_no_spotify_match_file}")
+    with open(in_jambd_no_spotify_match_file, "w") as fh:
+        fh.write("\n".join(in_jamdb_no_spotify))
+    # ============================================================================    
+
+    # assert should be unnecessary as previous loop should have been deduping
     assert len({row[2] for row in name_mapping}) == len(name_mapping)
+    
     name_mapping = {row[2]: row[0] for row in name_mapping}
     return name_mapping
 
@@ -174,16 +205,18 @@ def get_tracks_from_spotify(playlist_id):
 
     return songs_from_spotify
 
-def get_new_ref_recs(db_handler, table_name):
+
+def get_new_ref_recs(db_handler, table_name, output_data_dir):
 
     songs_from_spotify = get_tracks_from_spotify(PLAYLIST_ID)
     
     current_ref_recs = db_handler.read_table(table_name).query("source_id == 'spotify'")["link"].tolist()
+    # check should be unnecessary as DB has a uniqueness constraint on link
     assert len(current_ref_recs) == len(set(current_ref_recs))
     current_ref_recs = set(current_ref_recs)
 
     name_mapping_file = SRC_DATA_DIR / "spotify_ref_rec_name_mapping.csv"
-    name_mapping = get_name_mapping(name_mapping_file, db_handler, songs_from_spotify)
+    name_mapping = get_name_mapping(name_mapping_file, db_handler, songs_from_spotify, output_data_dir)
         
     new_ref_recs = []
     for song in songs_from_spotify:    
@@ -225,7 +258,8 @@ if __name__ == "__main__":
     db_file = Path(db_file)
     db_handler = DBHandler.from_db_file(db_file)
     
-    new_ref_recs = get_new_ref_recs(db_handler, table_name)
+    new_ref_recs = get_new_ref_recs(db_handler, table_name, output_data_dir=data_dir)
+
 
     if len(new_ref_recs) > 0:
         db_handler.insert(table_name, new_ref_recs.to_dict(orient="records"))        
