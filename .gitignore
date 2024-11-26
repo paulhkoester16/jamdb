@@ -11,3 +11,10 @@ build/
 
 data/
 
+
+.cache
+Pipfile
+Pipfile.lock
+examples/
+installing_env.txt
+
